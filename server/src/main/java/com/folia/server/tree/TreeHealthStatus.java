@@ -1,4 +1,4 @@
-package com.folia.server.model;
+package com.folia.server.tree;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

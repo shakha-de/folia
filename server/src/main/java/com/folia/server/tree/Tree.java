@@ -1,4 +1,4 @@
-package com.folia.server.model;
+package com.folia.server.tree;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;

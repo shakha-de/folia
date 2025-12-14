@@ -1,4 +1,4 @@
-package com.folia.server.model;
+package com.folia.server.tree;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -10,5 +10,5 @@ public enum SoilMoistureLevel {
     MODERATE("Moderate"),
     WET("Wet");
 
-    private final String displayText;
+    private final String displayName;
 }
