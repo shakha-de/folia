@@ -30,7 +30,6 @@ spring:
 
   flyway:
     enabled: true
-    locations: classpath:db/migration,classpath:db/dev-migration
 
   servlet:
     multipart:

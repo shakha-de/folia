@@ -1,7 +1,7 @@
 services:
   db:
-    container_name: postgres-db
-    image: postgres:17-alpine
+    container_name: postgis
+    image: postgis/postgis:18-3.6-alpine
     env_file:
       - .env
     ports:

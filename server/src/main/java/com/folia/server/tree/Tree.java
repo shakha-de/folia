@@ -8,14 +8,15 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+import org.locationtech.jts.geom.Point;
 
-import java.awt.*;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
 @Entity
+@Table(name = "trees")
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
@@ -25,8 +26,9 @@ public class Tree {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
-    private UUID uuid = UUID.randomUUID();
+    @Builder.Default
+    @Column(name = "public_id", nullable = false, unique = true, updatable = false)
+    private UUID publicId = UUID.randomUUID();
 
     @Column(nullable = false)
     private String species;
@@ -38,11 +40,13 @@ public class Tree {
     @Column(name = "location", columnDefinition = "geometry(Point,4326)")
     private Point location; // latitude/longitude as a Point
 
+    @Builder.Default
     @Column(name = "soil_moisture_level", nullable = false)
     @Enumerated(EnumType.STRING)
     private SoilMoistureLevel soilMoistureLevel = SoilMoistureLevel.DRY;
 
-    @Column(nullable = false)
+    @Builder.Default
+    @Column(name = "health_status", nullable = false)
     @Enumerated(EnumType.STRING)
     private TreeHealthStatus healthStatus = TreeHealthStatus.HEALTHY;
 
@@ -56,13 +60,37 @@ public class Tree {
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
+    @Builder.Default
     private Map<String, Object> metadata = new HashMap<>();
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    @Column(nullable = false, updatable = false)
+    @Builder.Default
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    @Column(nullable = false)
+    @Builder.Default
+    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt = LocalDateTime.now();
+
+    @PrePersist
+    void prePersist() {
+        if (publicId == null) {
+            publicId = UUID.randomUUID();
+        }
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+        if (updatedAt == null) {
+            updatedAt = createdAt;
+        }
+        if (metadata == null) {
+            metadata = new HashMap<>();
+        }
+    }
+
+    @PreUpdate
+    void preUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 }
