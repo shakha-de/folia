@@ -35,6 +35,9 @@ public enum MessageKey {
     AUTH_TOKEN_EXPIRED("auth.token.expired"),
     AUTH_TOKEN_INVALID("auth.token.invalid"),
 
+    // ============== TREE: ERROR ============
+    TREE_NOT_FOUND("tree.not.found"),
+
     // ============== VALIDATION (USER) ========
     VALIDATION_USER_USERNAME_INVALID("validation.user.username.invalid"),
     VALIDATION_USER_EMAIL_INVALID("validation.user.email.invalid"),

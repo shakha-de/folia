@@ -17,6 +17,7 @@ import org.springframework.boot.hibernate.autoconfigure.HibernateJpaAutoConfigur
 import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
+import com.folia.server.common.messages.MessageService;
 import com.folia.server.exceptions.ApiExceptionHandler;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
@@ -108,6 +109,12 @@ class TreeControllerTest {
         @Primary
         TreeService treeService() {
             return Mockito.mock(TreeService.class);
+        }
+
+        @Bean
+        @Primary
+        MessageService messageService() {
+            return Mockito.mock(MessageService.class);
         }
     }
 }

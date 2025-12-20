@@ -147,11 +147,12 @@ class UserControllerTest {
     void byUuid_missing_returns404ProblemDetail() throws Exception {
         UUID uuid = UUID.fromString("00000000-0000-0000-0000-000000000004");
         when(userService.getUserByUuid(uuid)).thenThrow(new com.folia.server.exceptions.UserNotFoundException(MessageKey.USER_NOT_FOUND, uuid));
+        when(messageService.get(eq(MessageKey.USER_NOT_FOUND), any(Locale.class), eq(uuid))).thenReturn("User not found");
 
         mockMvc.perform(get("/api/users/{uuid}", uuid))
             .andExpect(status().isNotFound())
             .andExpect(jsonPath("$.title").value("Not found"))
-            .andExpect(jsonPath("$.detail").value("USER_NOT_FOUND"));
+            .andExpect(jsonPath("$.detail").value("User not found"));
     }
 
     @Test
