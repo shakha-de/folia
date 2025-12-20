@@ -35,7 +35,6 @@ public class User {
     @Column(unique = true)
     private String email;
 
-    @Column
     @Size(max = 20, message = "Telephone number is too long")
     private String phone;
 

@@ -1,6 +1,7 @@
 package com.folia.server.tree;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.UUID;
 
 public record TreeDto(
@@ -14,7 +15,8 @@ public record TreeDto(
         LocalDateTime lastWateredAt,
         LocalDateTime nextWateringDue,
         LocalDateTime createdAt,
-        LocalDateTime updatedAt
+    LocalDateTime updatedAt,
+    Map<String, Object> metadata
 ) {
     public static TreeDto from(Tree tree) {
         double lat = tree.getLocation() == null ? 0.0 : tree.getLocation().getY();
@@ -30,7 +32,8 @@ public record TreeDto(
                 tree.getLastWateredAt(),
                 tree.getNextWateringDue(),
                 tree.getCreatedAt(),
-                tree.getUpdatedAt()
+                tree.getUpdatedAt(),
+                tree.getMetadata()
         );
     }
 }
