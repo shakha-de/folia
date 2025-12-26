@@ -6,10 +6,13 @@
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-primary: #13ec37;
+  --color-background-light: #f6f8f6;
+  --color-background-dark: #102213;
+  --color-earth-brown: #5d4037;
+  --color-earth-terra: #8d6e63;
+  --font-display: "Inter", sans-serif;
+  --font-body: "Noto Sans", sans-serif;
 }
 
 @media (prefers-color-scheme: dark) {
