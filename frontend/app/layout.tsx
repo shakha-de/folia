@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { Inter, Noto_Sans } from "next/font/google";
 
 import "./globals.css";
 
@@ -14,9 +13,6 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
-const noto = Noto_Sans({ subsets: ["latin"], variable: "--font-noto" });
-
 export const metadata: Metadata = {
   title: "Folia",
   description: "Save trees",
@@ -29,10 +25,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <link
+      <head>
+        <link
           rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
         />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
