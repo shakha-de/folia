@@ -30,6 +30,7 @@
 		<java.version>25</java.version>
 		<jts.version>1.19.0</jts.version>
 		<testcontainers.version>1.20.4</testcontainers.version>
+		<jjwt.version>0.13.0</jjwt.version>
 	</properties>
 
 	<dependencyManagement>
@@ -131,6 +132,21 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-security</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>io.jsonwebtoken</groupId>
+			<artifactId>jjwt-api</artifactId>
+			<version>${jjwt.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>io.jsonwebtoken</groupId>
+			<artifactId>jjwt-impl</artifactId>
+			<version>${jjwt.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>io.jsonwebtoken</groupId>
+			<artifactId>jjwt-jackson</artifactId>
+			<version>${jjwt.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.security</groupId>

@@ -39,3 +39,6 @@ spring:
       max-file-size: 10MB
       enabled: true
 
+jwt:
+  secret: "${JWT_SECRET:dev-secret-change-me-please-change-me-please}"
+  expiration: ${JWT_EXPIRATION:3600000}

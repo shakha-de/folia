@@ -37,3 +37,10 @@ spring:
       max-file-size: 10MB
       enabled: true
 
+application:
+  security:
+    jwt:
+      secret-key: "${JWT_SECRET:KkweM4d/4pZ5+Jq0v5xG5yQ9XzB+F9hL2jN8p7s4r1o=}"
+      expiration: ${JWT_EXPIRATION:86400000} # 1 day
+      refresh-token:
+        expiration: ${JWT_REFRESH_EXPIRATION:604800000} # 7 days
