@@ -60,8 +60,10 @@ class TreeControllerTest {
                         .param("lng", "13.405")
                         .param("radiusMeters", "250"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].publicId").value("00000000-0000-0000-0000-000000000001"))
-                .andExpect(jsonPath("$[0].species").value("Acer platanoides"));
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.message").value("Nearby trees retrieved successfully"))
+            .andExpect(jsonPath("$.data[0].publicId").value("00000000-0000-0000-0000-000000000001"))
+            .andExpect(jsonPath("$.data[0].species").value("Acer platanoides"));
 
         verify(treeService).findTreesNearby(eq(52.52), eq(13.405), eq(250));
     }
@@ -72,7 +74,8 @@ class TreeControllerTest {
                         .param("lat", "52.52")
                         .param("lng", "13.405")
                         .param("radiusMeters", "0"))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.title").value("Validation failed"));
     }
 
     @Test
@@ -81,7 +84,8 @@ class TreeControllerTest {
                         .param("lat", "-91")
                         .param("lng", "13.405")
                         .param("radiusMeters", "250"))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.title").value("Validation failed"));
     }
 
     @Test
@@ -90,7 +94,8 @@ class TreeControllerTest {
                         .param("lat", "52.52")
                         .param("lng", "181")
                         .param("radiusMeters", "250"))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.title").value("Validation failed"));
     }
 
     @SpringBootConfiguration
