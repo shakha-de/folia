@@ -34,6 +34,9 @@ public enum MessageKey {
     AUTH_ACCESS_DENIED("auth.access.denied"),
     AUTH_TOKEN_EXPIRED("auth.token.expired"),
     AUTH_TOKEN_INVALID("auth.token.invalid"),
+    AUTH_REFRESH_TOKEN_EXPIRED("auth.refresh.token.expired"),
+    AUTH_REFRESH_TOKEN_REVOKED("auth.refresh.token.revoked"),
+    AUTH_REFRESH_TOKEN_NOT_FOUND("auth.refresh.token.not.found"),
 
     // ============== TREE: ERROR ============
     TREE_NOT_FOUND("tree.not.found"),

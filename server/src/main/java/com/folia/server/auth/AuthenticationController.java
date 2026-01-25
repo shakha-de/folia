@@ -19,9 +19,13 @@ public class AuthenticationController {
 
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<AuthResponse>> login(
-            @RequestBody @Valid LoginRequest request
-    ) {
+            @RequestBody @Valid LoginRequest request) {
         return ResponseUtils.ok(service.authenticate(request), "Login successful");
     }
-}
 
+    @PostMapping("/refresh-token")
+    public ResponseEntity<ApiResponse<AuthResponse>> refresh(
+            @RequestBody @Valid TokenRefreshRequest request) {
+        return ResponseUtils.ok(service.refreshToken(request), "Token refreshed successfully");
+    }
+}

@@ -34,6 +34,28 @@ public class ApiExceptionHandler {
         return notFoundDetail(exception.getMessageKey(), exception.getArgs());
     }
 
+    @ExceptionHandler(TokenNotFoundException.class)
+    ProblemDetail handleTokenNotFound(TokenNotFoundException exception) {
+        return notFoundDetail(exception.getMessageKey(), exception.getArgs());
+    }
+
+    @ExceptionHandler(TokenExpiredException.class)
+    ProblemDetail handleTokenExpired(TokenExpiredException exception) {
+        return unauthorizedDetail(exception.getMessageKey(), exception.getArgs());
+    }
+
+    @ExceptionHandler(TokenRevokedException.class)
+    ProblemDetail handleTokenRevoked(TokenRevokedException exception) {
+        return unauthorizedDetail(exception.getMessageKey(), exception.getArgs());
+    }
+
+    private ProblemDetail unauthorizedDetail(MessageKey messageKey, Object[] args) {
+        ProblemDetail detail = ProblemDetail.forStatus(HttpStatus.UNAUTHORIZED);
+        detail.setTitle("Unauthorized");
+        detail.setDetail(messageService.get(messageKey, LocaleContextHolder.getLocale(), args));
+        return detail;
+    }
+
     private ProblemDetail notFoundDetail(MessageKey messageKey, Object[] args) {
         ProblemDetail detail = ProblemDetail.forStatus(HttpStatus.NOT_FOUND);
         detail.setTitle("Not found");
