@@ -21,6 +21,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -53,8 +54,7 @@ class TreeServiceTest {
                 13.405,
                 SoilMoistureLevel.DRY,
                 TreeHealthStatus.HEALTHY,
-                Map.of("plantedBy", "alice")
-        );
+                Map.of("plantedBy", "alice"));
 
         when(treeRepository.save(any(Tree.class))).thenAnswer(invocation -> invocation.getArgument(0));
         LocalDateTime before = LocalDateTime.now();
@@ -103,8 +103,7 @@ class TreeServiceTest {
                 TreeHealthStatus.HEALTHY,
                 Map.of("note", "updated"),
                 40.0,
-                -74.0
-        );
+                -74.0);
 
         Tree updated = treeService.updateTree(publicId, request);
 
@@ -154,8 +153,8 @@ class TreeServiceTest {
     void getTreesNeedingWater_filtersByDueDate() {
         LocalDateTime now = LocalDateTime.now();
         Tree due = Tree.builder().nextWateringDue(now.minusHours(1)).build();
-        Tree notDue = Tree.builder().nextWateringDue(now.plusDays(1)).build();
-        when(treeRepository.findNearby(52.0, 13.0, 200)).thenReturn(List.of(due, notDue));
+        when(treeRepository.findTreesNeedingWater(eq(52.0), eq(13.0), eq(200), any(LocalDateTime.class)))
+                .thenReturn(List.of(due));
 
         List<Tree> needingWater = treeService.getTreesNeedingWater(52.0, 13.0, 200);
 
@@ -169,12 +168,8 @@ class TreeServiceTest {
                 .soilMoistureLevel(SoilMoistureLevel.DRY)
                 .healthStatus(TreeHealthStatus.HEALTHY)
                 .build();
-        Tree pine = Tree.builder()
-                .species("Pine")
-                .soilMoistureLevel(SoilMoistureLevel.MODERATE)
-                .healthStatus(TreeHealthStatus.STRESSED)
-                .build();
-        when(treeRepository.findAll()).thenReturn(List.of(oak, pine));
+        when(treeRepository.searchTrees("Oak", "HEALTHY", "DRY"))
+                .thenReturn(List.of(oak));
 
         TreeSearchCriteria criteria = new TreeSearchCriteria("Oak", TreeHealthStatus.HEALTHY, SoilMoistureLevel.DRY);
 

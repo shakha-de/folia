@@ -74,25 +74,21 @@ public class TreeService {
 
         // Record a simple note if provided
         request.optionalNotes().ifPresent(note -> tree.getMetadata().put("lastWaterNote", note));
-        request.optionalWaterAmountLiters().ifPresent(amount -> tree.getMetadata().put("lastWaterAmountLiters", amount));
+        request.optionalWaterAmountLiters()
+                .ifPresent(amount -> tree.getMetadata().put("lastWaterAmountLiters", amount));
 
         return treeRepository.save(tree);
     }
 
     public List<Tree> getTreesNeedingWater(double lat, double lng, int radiusMeters) {
-        LocalDateTime now = LocalDateTime.now();
-        return treeRepository.findNearby(lat, lng, radiusMeters).stream()
-                .filter(tree -> tree.getNextWateringDue() == null || !tree.getNextWateringDue().isAfter(now))
-                .toList();
+        return treeRepository.findTreesNeedingWater(lat, lng, radiusMeters, LocalDateTime.now());
     }
 
     public List<Tree> searchTrees(TreeSearchCriteria criteria) {
-        // Simple in-memory filter over all trees; replace with repository query when available
-        return treeRepository.findAll().stream()
-                .filter(t -> criteria.species() == null || criteria.species().equalsIgnoreCase(t.getSpecies()))
-                .filter(t -> criteria.healthStatus() == null || criteria.healthStatus() == t.getHealthStatus())
-                .filter(t -> criteria.soilMoistureLevel() == null || criteria.soilMoistureLevel() == t.getSoilMoistureLevel())
-                .toList();
+        return treeRepository.searchTrees(
+                criteria.species(),
+                criteria.healthStatus() != null ? criteria.healthStatus().name() : null,
+                criteria.soilMoistureLevel() != null ? criteria.soilMoistureLevel().name() : null);
     }
 
     public TreeStats getTreeStats(double lat, double lng, int radiusMeters) {
