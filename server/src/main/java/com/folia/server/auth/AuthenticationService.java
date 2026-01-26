@@ -30,7 +30,6 @@ public class AuthenticationService {
                                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
                 var jwtToken = jwtService.generateToken(user);
 
-                // Stored refresh token
                 var refreshToken = refreshTokenService.createRefreshToken(user);
 
                 return new AuthResponse(jwtToken, refreshToken.getToken(), UserDto.from(user));
@@ -43,15 +42,12 @@ public class AuthenticationService {
                                 .map(refreshTokenService::verifyExpiration)
                                 .map(token -> {
                                         if (token.isRevoked()) {
-                                                // Rotation breach: token reuse detected. Revoke all tokens for this
-                                                // user.
                                                 refreshTokenService.deleteByUserId(token.getUser());
                                                 throw new TokenRevokedException(MessageKey.AUTH_REFRESH_TOKEN_REVOKED);
                                         }
                                         return token;
                                 })
                                 .map(token -> {
-                                        // Revoke old token and issue new ones (rotation)
                                         refreshTokenService.revokeToken(token);
                                         var user = token.getUser();
                                         String accessToken = jwtService.generateToken(user);

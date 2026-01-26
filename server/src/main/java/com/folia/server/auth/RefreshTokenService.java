@@ -33,7 +33,7 @@ public class RefreshTokenService {
         RefreshToken refreshToken = RefreshToken.builder()
                 .user(user)
                 .token(UUID.randomUUID().toString())
-                .expiryDate(LocalDateTime.now().plusNanos(refreshExpiration * 1000000)) // refreshExpiration is in ms
+                .expiryDate(LocalDateTime.now().plusNanos(refreshExpiration * 1000000))
                 .build();
 
         return refreshTokenRepository.save(refreshToken);
@@ -58,7 +58,7 @@ public class RefreshTokenService {
         refreshTokenRepository.save(token);
     }
 
-    @Scheduled(cron = "${application.security.jwt.refresh-token.cleanup-cron:0 0 3 * * ?}") // Default 3 AM
+    @Scheduled(cron = "${application.security.jwt.refresh-token.cleanup-cron:0 0 3 * * ?}")
     @Transactional
     public void cleanUpTokens() {
         log.info("Cleaning up expired and revoked refresh tokens");
