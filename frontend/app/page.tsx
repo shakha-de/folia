@@ -2,48 +2,13 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useAuth } from "@/context/AuthContext";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 
 export default function Home() {
-  const { user, logout, isAuthenticated } = useAuth();
-
   return (
     <div className="bg-background-light dark:bg-background-dark font-display text-shadow-slate-900 dark:text-white antialiased selection:bg-primary selection:text-background-dark flex flex-col min-h-screen">
-      <nav className="w-full border-b border-[#e5e7eb] dark:border-[#28392b] bg-background-light dark:bg-background-dark sticky top-0 z-50">
-        <div className="px-4 md:px-10 lg:px-10 flex items-center justify-between py-4 max-w-7xl mx-auto">
-          <div className="flex items-center gap-3">
-            <span className="material-symbols-outlined text-primary text-3xl">Forest</span>
-            <h2 className="text-slate-900 dark:text-white text-xl font-bold tracking-tight">Folia</h2>
-          </div>
-
-          <div className="hidden sm:flex items-center gap-4">
-            {isAuthenticated ? (
-              <div className="flex items-center gap-4">
-                <span className="text-sm font-bold text-slate-700 dark:text-slate-200">
-                  {user?.username}
-                </span>
-                <button
-                  onClick={logout}
-                  className="h-10 items-center justify-center rounded-lg px-6 border border-transparent hover:border-slate-200 dark:hover:border-[#3b543f] text-slate-700 dark:text-slate-200 text-sm font-bold transition-colors"
-                >
-                  Log out
-                </button>
-              </div>
-            ) : (
-              <Link
-                href="/login"
-                className="h-10 flex items-center justify-center rounded-lg px-6 border border-transparent hover:border-slate-200 dark:hover:border-[#3b543f] text-slate-700 dark:text-slate-200 text-sm font-bold transition-colors"
-              >
-                Log in
-              </Link>
-            )}
-          </div>
-
-          <button className="sm:hidden text-slate-900 dark:text-white">
-            <span className="material-symbols-outlined">menu</span>
-          </button>
-        </div>
-      </nav>
+      <Header />
       <main className="flex flex-col overflow-x-hidden">
         <section className="relative w-full flex-1 flex flex-col justify-center py-10 lg:py-20 px-4 md:px-10 lg:px-40">
           <div className="max-w-6xl mx-auto w-full">
@@ -144,20 +109,7 @@ export default function Home() {
           </div>
         </section>
       </main>
-      <footer className="w-full bg-background-light dark:bg-background-dark pt-10 pb-6 px-4 md:px-10 lg:px-40">
-        <div className="max-w-6xl mx-auto border-t border-slate-200 dark:border-[#28392b] pt-8">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-            <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-slate-400 dark:text-slate-600">emoji_nature</span>
-              <p className="text-slate-500 dark:text-[#9db9a1] text-sm font-normal">© 2025 Folia. Growing stronger together.</p>
-            </div>
-            <div className="flex items-center gap-8">
-              <a className="text-slate-600 dark:text-[#9db9a1] hover:text-primary dark:hover:text-primary text-sm font-medium transition-colors" href="#">Privacy Policy</a>
-              <a className="text-slate-600 dark:text-[#9db9a1] hover:text-primary dark:hover:text-primary text-sm font-medium transition-colors" href="#">Terms of Service</a>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

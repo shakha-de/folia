@@ -1,8 +1,11 @@
 import Link from "next/link";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 
 export default function LearnMore() {
 	return (
 		<div className="bg-background-light dark:bg-background-dark text-slate-900 dark:text-white min-h-screen font-display antialiased selection:bg-primary selection:text-background-dark">
+			<Header />
 			<main className="px-4 md:px-10 lg:px-40 py-12 lg:py-20 flex flex-col gap-16">
 				<section className="relative overflow-hidden rounded-3xl border border-slate-200 dark:border-[#28392b] bg-white/80 dark:bg-[#0f1b12]/80 shadow-2xl">
 					<div className="absolute inset-0 bg-linear-to-br from-primary/15 via-transparent to-[#8D6E63]/10 dark:from-primary/10" aria-hidden></div>
@@ -189,6 +192,7 @@ export default function LearnMore() {
 					</div>
 				</section>
 			</main>
+			<Footer />
 		</div>
 	);
 }
