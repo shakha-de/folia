@@ -10,8 +10,8 @@ export default function Footer() {
                         <p className="text-slate-500 dark:text-[#9db9a1] text-sm font-normal">© 2026 Folia. Growing stronger together.</p>
                     </div>
                     <div className="flex items-center gap-8">
-                        <Link className="text-slate-600 dark:text-[#9db9a1] hover:text-primary dark:hover:text-primary text-sm font-medium transition-colors" href="#">Privacy Policy</Link>
-                        <Link className="text-slate-600 dark:text-[#9db9a1] hover:text-primary dark:hover:text-primary text-sm font-medium transition-colors" href="#">Terms of Service</Link>
+                        <Link className="text-slate-600 dark:text-[#9db9a1] hover:text-primary dark:hover:text-primary text-sm font-medium transition-colors" href="/privacy-policy">Privacy Policy</Link>
+                        <Link className="text-slate-600 dark:text-[#9db9a1] hover:text-primary dark:hover:text-primary text-sm font-medium transition-colors" href="/terms-of-service">Terms of Service</Link>
                     </div>
                 </div>
             </div>
