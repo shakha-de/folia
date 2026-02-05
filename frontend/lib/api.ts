@@ -1,57 +1,70 @@
-import axios from "axios";
+import axios from 'axios';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api';
 
 const api = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api",
+    baseURL: API_URL,
     headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
     },
 });
 
-api.interceptors.request.use(
-    (config) => {
-        const token = localStorage.getItem("accessToken");
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
-        }
-        return config;
-    },
-    (error) => Promise.reject(error)
-);
+export interface TreeDto {
+    publicId: string;
+    species: string;
+    commonName: string;
+    location: {
+        x: number; // lng
+        y: number; // lat
+        coordinates?: number[];
+    } | { lat: number; lng: number }; // adjust based on actual API response for Point
+    soilMoistureLevel: 'DRY' | 'MODERATE' | 'WET';
+    healthStatus: 'HEALTHY' | 'NEEDS_CARE' | 'CRITICAL';
+    lastWateredAt?: string;
+    nextWateringDue?: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    metadata: Record<string, any>;
+}
 
-api.interceptors.response.use(
-    (response) => response,
-    async (error) => {
-        const originalRequest = error.config;
+export interface TreeStats {
+    totalTrees: number;
+    treesBySpecies: Record<string, number>;
+    treesByHealth: Record<string, number>;
+    treesBySoilMoisture: Record<string, number>;
+    treesNeedingWater: number;
+    generatedAt: string;
+}
 
-        if (error.response?.status === 401 && !originalRequest._retry) {
-            originalRequest._retry = true;
-            const refreshToken = localStorage.getItem("refreshToken");
+export interface UserDto {
+    uuid: string;
+    username: string;
+    email: string;
+    role: string;
+    enabled: boolean;
+}
 
-            if (refreshToken) {
-                try {
-                    const response = await axios.post(`${api.defaults.baseURL}/auth/refresh-token`, {
-                        refreshToken,
-                    });
-
-                    const { token: newAccessToken, refreshToken: newRefreshToken } = response.data.data;
-
-                    localStorage.setItem("accessToken", newAccessToken);
-                    localStorage.setItem("refreshToken", newRefreshToken);
-
-                    originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
-                    return api(originalRequest);
-                } catch (refreshError) {
-                    localStorage.removeItem("accessToken");
-                    localStorage.removeItem("refreshToken");
-                    localStorage.removeItem("user");
-                    window.location.href = "/login";
-                    return Promise.reject(refreshError);
-                }
-            }
-        }
-
-        return Promise.reject(error);
+export const fetchNearbyTrees = async (lat: number, lng: number, radiusMeters: number = 250): Promise<TreeDto[]> => {
+    try {
+        const response = await api.get<{ data: TreeDto[] }>('/trees/nearby', {
+            params: { lat, lng, radiusMeters },
+        });
+        return response.data.data;
+    } catch (error) {
+        console.error("Error fetching nearby trees:", error);
+        return [];
     }
-);
+};
+
+export const fetchTreeStats = async (lat: number, lng: number, radiusMeters: number = 5000): Promise<TreeStats | null> => {
+    try {
+        const response = await api.get<{ data: TreeStats }>('/trees/stats', {
+            params: { lat, lng, radiusMeters },
+        });
+        return response.data.data;
+    } catch (error) {
+        console.error("Error fetching tree stats:", error);
+        return null;
+    }
+};
 
 export default api;

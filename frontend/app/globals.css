@@ -11,6 +11,8 @@
   --color-background-dark: #102213;
   --color-earth-brown: #5d4037;
   --color-earth-terra: #8d6e63;
+  --color-surface-dark: #1c2a20;
+  --color-surface-light: #ffffff;
   --font-display: "Inter", sans-serif;
   --font-body: "Noto Sans", sans-serif;
 }
