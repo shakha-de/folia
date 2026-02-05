@@ -18,7 +18,7 @@ spring:
   jpa:
     defer-datasource-initialization: true
     hibernate:
-      ddl-auto: none
+      ddl-auto: create-drop
     properties:
       hibernate:
         format_sql: true
@@ -29,7 +29,7 @@ spring:
     show-sql: true
 
   flyway:
-    enabled: true
+    enabled: false
     locations: classpath:db/migration,classpath:db/dev-migration
     clean-disabled: false
 

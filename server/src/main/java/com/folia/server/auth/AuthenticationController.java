@@ -28,4 +28,10 @@ public class AuthenticationController {
             @RequestBody @Valid TokenRefreshRequest request) {
         return ResponseUtils.ok(service.refreshToken(request), "Token refreshed successfully");
     }
+
+    @PostMapping("/register")
+    public ResponseEntity<ApiResponse<AuthResponse>> register(
+            @RequestBody @Valid RegisterRequest request) {
+        return ResponseUtils.ok(service.register(request), "User registered successfully");
+    }
 }

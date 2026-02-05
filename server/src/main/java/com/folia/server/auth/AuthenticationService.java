@@ -20,6 +20,7 @@ public class AuthenticationService {
         private final JwtService jwtService;
         private final AuthenticationManager authenticationManager;
         private final RefreshTokenService refreshTokenService;
+        private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
         public AuthResponse authenticate(LoginRequest request) {
                 authenticationManager.authenticate(
@@ -33,6 +34,21 @@ public class AuthenticationService {
                 var refreshToken = refreshTokenService.createRefreshToken(user);
 
                 return new AuthResponse(jwtToken, refreshToken.getToken(), UserDto.from(user));
+        }
+
+        public AuthResponse register(RegisterRequest request) {
+                var user = com.folia.server.user.User.builder()
+                                .username(request.getUsername())
+                                .email(request.getEmail())
+                                .passwordHash(passwordEncoder.encode(request.getPassword()))
+                                .role(com.folia.server.user.UserRole.CITIZEN)
+                                .isEnabled(true)
+                                .isEmailVerified(false)
+                                .build();
+                var savedUser = userRepository.save(user);
+                var jwtToken = jwtService.generateToken(savedUser);
+                var refreshToken = refreshTokenService.createRefreshToken(savedUser);
+                return new AuthResponse(jwtToken, refreshToken.getToken(), UserDto.from(savedUser));
         }
 
         public AuthResponse refreshToken(TokenRefreshRequest request) {
