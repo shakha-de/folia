@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { ThemeToggle } from "./ThemeToggle";
 
 export default function Header() {
     const { user, logout, isAuthenticated } = useAuth();
@@ -36,6 +37,7 @@ export default function Header() {
                     <div className="h-6 w-px bg-slate-200 dark:bg-[#28392b]"></div>
 
                     <div className="flex items-center gap-4">
+                        <ThemeToggle />
                         {isAuthenticated ? (
                             <div className="flex items-center gap-4">
                                 <span className="text-sm font-bold text-slate-700 dark:text-slate-200">
