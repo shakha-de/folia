@@ -22,6 +22,18 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Check if mock authentication is enabled
+const MOCK_AUTH_ENABLED = process.env.NEXT_PUBLIC_MOCK_AUTH === 'true';
+
+// Mock user data
+const MOCK_USER: User = {
+    uuid: "mock-uuid-123",
+    username: "demo_user",
+    email: "demo@folia.com",
+    role: "USER",
+    enabled: true,
+};
+
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
@@ -35,6 +47,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, []);
 
     const login = async (credentials: any) => {
+        if (MOCK_AUTH_ENABLED) {
+            // Mock authentication - no backend call
+            console.log("🎭 Mock authentication enabled - bypassing backend");
+            console.log("Credentials:", credentials);
+
+            // Simulate network delay
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            // Set mock tokens and user data
+            localStorage.setItem("accessToken", "mock-access-token");
+            localStorage.setItem("refreshToken", "mock-refresh-token");
+            localStorage.setItem("user", JSON.stringify(MOCK_USER));
+
+            setUser(MOCK_USER);
+            return;
+        }
+
+        // Real authentication
         try {
             const response = await api.post("/auth/login", credentials);
             const { token, refreshToken, user: userData } = response.data.data;
@@ -50,6 +80,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     const register = async (data: any) => {
+        if (MOCK_AUTH_ENABLED) {
+            // Mock registration - no backend call
+            console.log("🎭 Mock authentication enabled - bypassing backend");
+            console.log("Registration data:", data);
+
+            // Simulate network delay
+            await new Promise(resolve => setTimeout(resolve, 800));
+
+            // Create mock user with provided username/email
+            const mockUser = {
+                ...MOCK_USER,
+                username: data.username,
+                email: data.email,
+            };
+
+            localStorage.setItem("accessToken", "mock-access-token");
+            localStorage.setItem("refreshToken", "mock-refresh-token");
+            localStorage.setItem("user", JSON.stringify(mockUser));
+
+            setUser(mockUser);
+            return;
+        }
+
+        // Real registration
         try {
             const response = await api.post("/auth/register", data);
 
@@ -66,6 +120,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     const logout = () => {
+        if (MOCK_AUTH_ENABLED) {
+            console.log("🎭 Mock logout");
+        }
+
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");
         localStorage.removeItem("user");

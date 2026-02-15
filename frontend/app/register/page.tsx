@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 export default function RegisterPage() {
     const [username, setUsername] = useState("");
@@ -57,14 +59,13 @@ export default function RegisterPage() {
                             <label htmlFor="username" className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">
                                 Username
                             </label>
-                            <input
+                            <Input
                                 id="username"
                                 name="username"
                                 type="text"
                                 required
                                 value={username}
                                 onChange={(e) => setUsername(e.target.value)}
-                                className="block w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-[#28392b] bg-slate-50 dark:bg-[#0c1a0e] text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-hidden"
                                 placeholder="naturelover123"
                             />
                         </div>
@@ -72,14 +73,13 @@ export default function RegisterPage() {
                             <label htmlFor="email" className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">
                                 Email Address
                             </label>
-                            <input
+                            <Input
                                 id="email"
                                 name="email"
                                 type="email"
                                 required
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                className="block w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-[#28392b] bg-slate-50 dark:bg-[#0c1a0e] text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-hidden"
                                 placeholder="guardian@example.com"
                             />
                         </div>
@@ -87,27 +87,26 @@ export default function RegisterPage() {
                             <label htmlFor="password" className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">
                                 Password
                             </label>
-                            <input
+                            <Input
                                 id="password"
                                 name="password"
                                 type="password"
                                 required
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                className="block w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-[#28392b] bg-slate-50 dark:bg-[#0c1a0e] text-slate-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent transition-all outline-hidden"
                                 placeholder="••••••••"
                             />
                         </div>
                     </div>
 
                     <div>
-                        <button
+                        <Button
                             type="submit"
                             disabled={isLoading}
-                            className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-black rounded-xl text-[#111812] bg-primary hover:bg-[#0fd630] focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-primary/20"
+                            className="w-full"
                         >
                             {isLoading ? "Creating account..." : "Sign up"}
-                        </button>
+                        </Button>
                     </div>
                 </form>
 

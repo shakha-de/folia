@@ -1,5 +1,6 @@
 import React from 'react';
 import { TreeStats } from '@/lib/api';
+import { Card } from '@/components/ui/card';
 
 interface StatsOverviewProps {
     stats: TreeStats | null;
@@ -10,7 +11,7 @@ export default function StatsOverview({ stats }: StatsOverviewProps) {
 
     return (
         <section className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="flex flex-col gap-2 rounded-xl p-6 bg-[#1c2a20] border border-[#28392b] hover:border-primary/50 transition-colors">
+            <Card className="flex flex-col gap-2 p-6 hover:border-primary/50 transition-colors">
                 <div className="flex justify-between items-start">
                     <p className="text-[#9db9a1] text-sm font-medium uppercase tracking-wider">Trees Registered</p>
                     <span className="material-symbols-outlined text-[#9db9a1]">forest</span>
@@ -20,8 +21,8 @@ export default function StatsOverview({ stats }: StatsOverviewProps) {
                     <span className="material-symbols-outlined text-sm">trending_up</span>
                     <span>+1 this month</span>
                 </div>
-            </div>
-            <div className="flex flex-col gap-2 rounded-xl p-6 bg-[#1c2a20] border border-[#28392b] hover:border-primary/50 transition-colors">
+            </Card>
+            <Card className="flex flex-col gap-2 p-6 hover:border-primary/50 transition-colors">
                 <div className="flex justify-between items-start">
                     <p className="text-[#9db9a1] text-sm font-medium uppercase tracking-wider">Trees Needing Water</p>
                     <span className="material-symbols-outlined text-[#9db9a1]">water_drop</span>
@@ -31,8 +32,8 @@ export default function StatsOverview({ stats }: StatsOverviewProps) {
                     <span className="material-symbols-outlined text-sm">trending_up</span>
                     <span>+5 this week</span>
                 </div>
-            </div>
-            <div className="flex flex-col gap-2 rounded-xl p-6 bg-[#1c2a20] border border-[#28392b] hover:border-primary/50 transition-colors">
+            </Card>
+            <Card className="flex flex-col gap-2 p-6 hover:border-primary/50 transition-colors">
                 <div className="flex justify-between items-start">
                     <p className="text-[#9db9a1] text-sm font-medium uppercase tracking-wider">Liters Contributed</p>
                     <span className="material-symbols-outlined text-[#9db9a1]">opacity</span>
@@ -42,7 +43,7 @@ export default function StatsOverview({ stats }: StatsOverviewProps) {
                     <span className="material-symbols-outlined text-sm">trending_up</span>
                     <span>+120L this week</span>
                 </div>
-            </div>
+            </Card>
         </section>
     );
 }

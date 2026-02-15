@@ -6,12 +6,51 @@
   --background: #ffffff;
   --foreground: #171717;
   --background-app: #f6f8f6;
+
+  /* Shadcn UI Variables */
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 9%;
+  --primary: 130 85% 50%;
+  --primary-foreground: 0 0% 7%;
+  --secondary: 0 0% 96.5%;
+  --secondary-foreground: 0 0% 9%;
+  --muted: 0 0% 96.5%;
+  --muted-foreground: 0 0% 45%;
+  --accent: 0 0% 96.5%;
+  --accent-foreground: 0 0% 9%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 98%;
+  --border: 0 0% 90%;
+  --input: 0 0% 90%;
+  --ring: 130 85% 50%;
+  --radius: 0.75rem;
 }
 
 .dark {
   --background: #0a0a0a;
   --foreground: #ededed;
   --background-app: #102213;
+
+  /* Shadcn UI Variables - Dark Mode */
+  --card: 140 20% 11%;
+  --card-foreground: 0 0% 93%;
+  --popover: 140 20% 11%;
+  --popover-foreground: 0 0% 93%;
+  --primary: 130 85% 50%;
+  --primary-foreground: 0 0% 7%;
+  --secondary: 140 15% 15%;
+  --secondary-foreground: 0 0% 93%;
+  --muted: 140 15% 20%;
+  --muted-foreground: 0 0% 62%;
+  --accent: 140 15% 20%;
+  --accent-foreground: 0 0% 93%;
+  --destructive: 0 62% 30%;
+  --destructive-foreground: 0 0% 93%;
+  --border: 140 15% 20%;
+  --input: 140 15% 20%;
+  --ring: 130 85% 50%;
 }
 
 @theme inline {

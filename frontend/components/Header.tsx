@@ -4,6 +4,9 @@ import Link from "next/link";
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { ThemeToggle } from "./ThemeToggle";
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
+import { Menu, X } from "lucide-react";
 
 export default function Header() {
     const { user, logout, isAuthenticated } = useAuth();
@@ -43,81 +46,82 @@ export default function Header() {
                                 <span className="text-sm font-bold text-slate-700 dark:text-slate-200">
                                     {user?.username}
                                 </span>
-                                <button
+                                <Button
+                                    variant="ghost"
                                     onClick={logout}
-                                    className="h-10 items-center justify-center rounded-lg px-6 border border-transparent hover:border-slate-200 dark:hover:border-[#3b543f] text-slate-700 dark:text-slate-200 text-sm font-bold transition-colors"
                                 >
                                     Log out
-                                </button>
+                                </Button>
                             </div>
                         ) : (
-                            <Link
-                                href="/login"
-                                className="h-10 flex items-center justify-center rounded-lg px-6 border border-transparent hover:border-slate-200 dark:hover:border-[#3b543f] text-slate-700 dark:text-slate-200 text-sm font-bold transition-colors"
+                            <Button
+                                variant="ghost"
+                                asChild
                             >
-                                Log in
-                            </Link>
+                                <Link href="/login">Log in</Link>
+                            </Button>
                         )}
                     </div>
                 </div>
 
                 {/* Mobile Menu Button */}
-                <button
-                    onClick={() => setIsMenuOpen(!isMenuOpen)}
-                    className="sm:hidden text-slate-900 dark:text-white focus:outline-none"
-                >
-                    <span className="material-symbols-outlined">{isMenuOpen ? "close" : "menu"}</span>
-                </button>
-            </div>
-
-            {/* Mobile Navigation Dropdown */}
-            {isMenuOpen && (
-                <div className="sm:hidden bg-background-light dark:bg-background-dark border-b border-[#e5e7eb] dark:border-[#28392b] animate-in slide-in-from-top duration-300">
-                    <div className="px-4 py-6 flex flex-col gap-4">
-                        <Link
-                            href="/almanac"
-                            onClick={() => setIsMenuOpen(false)}
-                            className="text-base font-bold text-slate-700 dark:text-slate-200 hover:text-primary px-4 py-2 rounded-lg transition-colors"
-                        >
-                            Almanac
-                        </Link>
-                        <Link
-                            href="/learn-more"
-                            onClick={() => setIsMenuOpen(false)}
-                            className="text-base font-bold text-slate-700 dark:text-slate-200 hover:text-primary px-4 py-2 rounded-lg transition-colors"
-                        >
-                            Learn More
-                        </Link>
-                        <div className="h-px bg-slate-100 dark:bg-[#28392b] my-2"></div>
-                        {isAuthenticated ? (
-                            <>
-                                <div className="px-4 py-2">
-                                    <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold mb-1">Signed in as</p>
-                                    <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{user?.username}</p>
-                                </div>
-                                <button
-                                    onClick={() => {
-                                        logout();
-                                        setIsMenuOpen(false);
-                                    }}
-                                    className="flex items-center gap-2 h-12 w-full px-4 rounded-lg bg-red-500/10 text-red-500 text-sm font-bold transition-colors"
+                <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
+                    <SheetTrigger asChild className="sm:hidden">
+                        <Button variant="ghost" size="icon">
+                            <Menu className="h-6 w-6" />
+                        </Button>
+                    </SheetTrigger>
+                    <SheetContent side="right" className="bg-background-light dark:bg-background-dark border-l border-[#e5e7eb] dark:border-[#28392b]">
+                        <div className="flex flex-col gap-6 mt-8">
+                            <SheetClose asChild>
+                                <Link
+                                    href="/almanac"
+                                    className="text-base font-bold text-slate-700 dark:text-slate-200 hover:text-primary px-4 py-2 rounded-lg transition-colors"
                                 >
-                                    <span className="material-symbols-outlined text-sm">logout</span>
-                                    Log out
-                                </button>
-                            </>
-                        ) : (
-                            <Link
-                                href="/login"
-                                onClick={() => setIsMenuOpen(false)}
-                                className="flex items-center justify-center h-12 rounded-lg bg-primary text-[#111812] text-sm font-bold shadow-lg shadow-primary/20 transition-colors"
-                            >
-                                Log in
-                            </Link>
-                        )}
-                    </div>
-                </div>
-            )}
+                                    Almanac
+                                </Link>
+                            </SheetClose>
+                            <SheetClose asChild>
+                                <Link
+                                    href="/learn-more"
+                                    className="text-base font-bold text-slate-700 dark:text-slate-200 hover:text-primary px-4 py-2 rounded-lg transition-colors"
+                                >
+                                    Learn More
+                                </Link>
+                            </SheetClose>
+                            <div className="h-px bg-slate-100 dark:bg-[#28392b] my-2"></div>
+                            <div className="px-4">
+                                <ThemeToggle />
+                            </div>
+                            {isAuthenticated ? (
+                                <>
+                                    <div className="px-4 py-2">
+                                        <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold mb-1">Signed in as</p>
+                                        <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{user?.username}</p>
+                                    </div>
+                                    <Button
+                                        variant="destructive"
+                                        onClick={() => {
+                                            logout();
+                                            setIsMenuOpen(false);
+                                        }}
+                                        className="mx-4"
+                                    >
+                                        <span className="material-symbols-outlined text-sm mr-2">logout</span>
+                                        Log out
+                                    </Button>
+                                </>
+                            ) : (
+                                <SheetClose asChild>
+                                    <Button asChild className="mx-4">
+                                        <Link href="/login">Log in</Link>
+                                    </Button>
+                                </SheetClose>
+                            )}
+                        </div>
+                    </SheetContent>
+                </Sheet>
+            </div>
         </nav>
     );
 }
