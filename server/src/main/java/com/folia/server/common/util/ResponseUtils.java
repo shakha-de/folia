@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 
 public class ResponseUtils {
 
@@ -18,12 +19,23 @@ public class ResponseUtils {
         T data,
         HttpStatus status
     ) {
+        return build(success, message, data, null, status);
+    }
+
+    public static <T> ResponseEntity<ApiResponse<T>> build(
+        boolean success,
+        String message,
+        T data,
+        Map<String, String> errors,
+        HttpStatus status
+    ) {
         return ResponseEntity
             .status(status)
             .body(ApiResponse.<T>builder()
                 .success(success)
                 .message(message)
                 .data(data)
+                .errors(errors)
                 .timestamp(LocalDateTime.now())
                 .build()
             );
@@ -55,6 +67,10 @@ public class ResponseUtils {
 
     public static <T> ResponseEntity<ApiResponse<T>> badRequest(String message) {
         return build(false, message, null, HttpStatus.BAD_REQUEST);
+    }
+
+    public static <T> ResponseEntity<ApiResponse<T>> badRequest(String message, Map<String, String> errors) {
+        return build(false, message, null, errors, HttpStatus.BAD_REQUEST);
     }
 
     public static <T> ResponseEntity<ApiResponse<T>> internalServerError(String message) {

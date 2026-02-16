@@ -1,0 +1,42 @@
+meta {
+  name: Register User
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{host}}/api/auth/register
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "username":"username1",
+    "email":"mymail@example.com",
+    "password":"somestrongpassword"
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.success: eq true
+  res.body.message: contains registered successfully
+  res.body.data: isNotEmpty
+  res.body.data.user.role: eq CITIZEN
+  res.body.data.user.enabled: isTruthy
+}
+
+script:post-response {
+  let result = res.getBody();
+  var user1Obj = result.data.user;
+  var user1Id = result.data.user.uuid;
+  
+  
+  bru.setVar("user1Obj",user1Obj);
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

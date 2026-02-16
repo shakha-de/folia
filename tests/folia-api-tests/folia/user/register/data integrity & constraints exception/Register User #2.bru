@@ -1,0 +1,31 @@
+meta {
+  name: Register User #2
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{host}}/api/auth/register
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "username":"username2",
+    "email":"mymail@example.com",
+    "password":"somestrongpassword"
+  }
+}
+
+assert {
+  res.status: eq 409
+  res.body.success: eq false
+  res.body.message: contains already exists
+  res.body.data: isNull
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

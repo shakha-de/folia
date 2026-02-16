@@ -1,0 +1,12 @@
+opencollection: 1.0.0
+info:
+  name: "folia"
+  type: workspace
+
+collections:
+  - name: "folia-api-tests"
+    path: ".."
+
+specs:
+
+docs: ''

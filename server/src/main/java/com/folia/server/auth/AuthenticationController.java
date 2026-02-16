@@ -32,6 +32,6 @@ public class AuthenticationController {
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<AuthResponse>> register(
             @RequestBody @Valid RegisterRequest request) {
-        return ResponseUtils.ok(service.register(request), "User registered successfully");
+        return ResponseUtils.created(service.register(request), "User registered successfully");
     }
 }

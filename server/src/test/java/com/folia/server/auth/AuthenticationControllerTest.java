@@ -100,7 +100,7 @@ class AuthenticationControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(refreshRequest)))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.title").value("Not found"));
+                .andExpect(jsonPath("$.success").value(false));
     }
 
     @Test
@@ -114,7 +114,7 @@ class AuthenticationControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(refreshRequest)))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.title").value("Unauthorized"));
+                .andExpect(jsonPath("$.success").value(false));
     }
 
     @Test
@@ -128,7 +128,7 @@ class AuthenticationControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(refreshRequest)))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.title").value("Unauthorized"));
+                .andExpect(jsonPath("$.success").value(false));
     }
 
     @SpringBootConfiguration

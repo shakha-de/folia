@@ -1,6 +1,5 @@
 package com.folia.server.tree;
 
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -65,7 +64,7 @@ class TreeControllerTest {
             .andExpect(jsonPath("$.data[0].publicId").value("00000000-0000-0000-0000-000000000001"))
             .andExpect(jsonPath("$.data[0].species").value("Acer platanoides"));
 
-        verify(treeService).findTreesNearby(eq(52.52), eq(13.405), eq(250));
+        verify(treeService).findTreesNearby(52.52, 13.405, 250);
     }
 
     @Test
@@ -75,7 +74,8 @@ class TreeControllerTest {
                         .param("lng", "13.405")
                         .param("radiusMeters", "0"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.title").value("Validation failed"));
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("Validation failed"));
     }
 
     @Test
@@ -85,7 +85,8 @@ class TreeControllerTest {
                         .param("lng", "13.405")
                         .param("radiusMeters", "250"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.title").value("Validation failed"));
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("Validation failed"));
     }
 
     @Test
@@ -95,7 +96,8 @@ class TreeControllerTest {
                         .param("lng", "181")
                         .param("radiusMeters", "250"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.title").value("Validation failed"));
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("Validation failed"));
     }
 
     @SpringBootConfiguration

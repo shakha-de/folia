@@ -151,8 +151,9 @@ class UserControllerTest {
 
         mockMvc.perform(get("/api/users/{uuid}", uuid))
             .andExpect(status().isNotFound())
-            .andExpect(jsonPath("$.title").value("Not found"))
-            .andExpect(jsonPath("$.detail").value("User not found"));
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.message").value("User not found"))
+            .andExpect(jsonPath("$.data").isEmpty());
     }
 
     @Test

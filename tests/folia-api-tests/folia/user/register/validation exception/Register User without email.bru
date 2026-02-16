@@ -1,0 +1,31 @@
+meta {
+  name: Register User without email
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{host}}/api/auth/register
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "username":"username1",
+    "password":"somestrongpassword"
+  }
+}
+
+assert {
+  res.status: eq 400
+  res.body.success: eq false
+  res.body.message: contains Validation failed
+  res.body.data: isNull
+  res.body.errors.email: contains Email is required
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
