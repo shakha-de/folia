@@ -10,33 +10,21 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    permissions:
-      contents: read
+    env:
+      TESTCONTAINERS_RYUK_DISABLED: true
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up JDK 25
-        uses: actions/setup-java@v4
+      - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 25
+          java-version: 21
           cache: maven
 
-      - name: Setup Docker for Testcontainers
-        run: |
-          # Verify Docker is running
-          docker --version
-          docker info
-          # Add current user to docker group (though runner already has access)
-          sudo usermod -aG docker $USER || true
-          # Verify docker socket
-          ls -la /var/run/docker.sock
+      - name: Verify Docker
+        run: docker version
 
-      - name: Build and test with Maven (server module)
+      - name: Build and test
         working-directory: server
         run: ./mvnw -B clean test
-        env:
-          # Testcontainers will use the host Docker daemon
-          DOCKER_HOST: unix:///var/run/docker.sock
