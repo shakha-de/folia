@@ -19,7 +19,7 @@ class ServerApplicationTests {
 
 	@Container
 	static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>(
-			DockerImageName.parse("postgis/postgis:15-3.3-alpine").asCompatibleSubstituteFor("postgres")
+			DockerImageName.parse("postgis/postgis:17-master").asCompatibleSubstituteFor("postgres")
 	)
 			.withDatabaseName("folia")
 			.withUsername("folia")
