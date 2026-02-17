@@ -29,7 +29,7 @@
 	<properties>
 		<java.version>25</java.version>
 		<jts.version>1.19.0</jts.version>
-		<testcontainers.version>1.21</testcontainers.version>
+		<testcontainers.version>2.0.3</testcontainers.version>
 		<jjwt.version>0.13.0</jjwt.version>
 	</properties>
 
