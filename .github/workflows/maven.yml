@@ -10,6 +10,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: read
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -21,6 +24,19 @@ jobs:
           java-version: 25
           cache: maven
 
+      - name: Setup Docker for Testcontainers
+        run: |
+          # Verify Docker is running
+          docker --version
+          docker info
+          # Add current user to docker group (though runner already has access)
+          sudo usermod -aG docker $USER || true
+          # Verify docker socket
+          ls -la /var/run/docker.sock
+
       - name: Build and test with Maven (server module)
         working-directory: server
-        run: ./mvnw -B test
+        run: ./mvnw -B clean test
+        env:
+          # Testcontainers will use the host Docker daemon
+          DOCKER_HOST: unix:///var/run/docker.sock
