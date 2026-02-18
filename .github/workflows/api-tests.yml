@@ -38,10 +38,10 @@ jobs:
       - name: Run Bruno Tests
         run: |
           cd tests/folia-api-tests/ &&
-          bruno test --env ci --reporter html results.html
+          bru run --env ci --reporter html results.html
 
       - name: Upload Test Results
         uses: actions/upload-artifact@v6.0.0
         with:
           name: bruno-test-results
-          path: results.html
+          path: tests/folia-api-tests/results.html
