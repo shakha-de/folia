@@ -20,7 +20,7 @@ jobs:
       - name: Build Spring Boot
         run: |
           cd server/ &&
-          ./mvnv clean package -DskipTests
+          ./mvnw clean package -DskipTests
 
       - name: Start Spring Boot Server
         run: |
