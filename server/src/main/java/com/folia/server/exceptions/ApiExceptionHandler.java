@@ -27,21 +27,25 @@ public class ApiExceptionHandler {
     @ExceptionHandler(DataIntegrityViolationException.class)
     ResponseEntity<ApiResponse<Void>> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
         String causeMessage = ex.getMostSpecificCause().getMessage();
-        String message;
+        MessageKey messageKey;
 
+        // Map database constraints to user-friendly message keys
         if (causeMessage != null && causeMessage.contains("users_email_key")) {
-            message = "An account with this email address already exists";
+            messageKey = MessageKey.USER_EMAIL_ALREADY_EXISTS;
         } else if (causeMessage != null && causeMessage.contains("users_username_key")) {
-            message = "This username is already taken";
+            messageKey = MessageKey.USER_USERNAME_ALREADY_EXISTS;
         } else if (causeMessage != null && causeMessage.contains("duplicate key")) {
-            message = "This value already exists. Please use a different one";
+            messageKey = MessageKey.DATA_DUPLICATE_VALUE;
         } else {
-            message = "Data validation failed. Please check your input";
+            messageKey = MessageKey.DATA_VALIDATION_FAILED;
         }
 
-        // Log the actual error for debugging (only visible to developers/ops)
+        // ⚠️ SECURITY: Log detailed error server-side (only visible to developers/ops)
+        // Never expose database structure, constraints, or SQL details to clients
         log.error("Data integrity violation: {}", ex.getMostSpecificCause().getMessage());
 
+        // Return generic, user-friendly message using i18n
+        String message = messageService.get(messageKey, LocaleContextHolder.getLocale());
         return ResponseUtils.conflict(message);
     }
 

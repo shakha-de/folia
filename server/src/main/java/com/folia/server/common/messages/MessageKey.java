@@ -26,6 +26,10 @@ public enum MessageKey {
     USER_NOT_ENABLED("user.not.enabled"),
     USER_EMAIL_NOT_VERIFIED("user.email.not.verified"),
 
+    // ================= DATA INTEGRITY =========
+    DATA_DUPLICATE_VALUE("data.duplicate.value"),
+    DATA_VALIDATION_FAILED("data.validation.failed"),
+
     // ================= AUTH ===================
     AUTH_LOGIN_SUCCESS("auth.login.success"),
     AUTH_LOGIN_FAILED("auth.login.failed"),
