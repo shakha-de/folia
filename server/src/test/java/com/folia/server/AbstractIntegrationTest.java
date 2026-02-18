@@ -10,7 +10,7 @@ import org.testcontainers.utility.DockerImageName;
 public abstract class AbstractIntegrationTest {
 
     static final PostgreSQLContainer<?> POSTGRES = new PostgreSQLContainer<>(
-            DockerImageName.parse("postgis/postgis:17-master").asCompatibleSubstituteFor("postgres")
+            DockerImageName.parse("postgis/postgis:17-3.5").asCompatibleSubstituteFor("postgres")
     )
             .withDatabaseName("folia")
             .withUsername("folia")

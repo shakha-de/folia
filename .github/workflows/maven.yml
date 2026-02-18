@@ -10,6 +10,11 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    env:
+      DOCKER_API_VERSION: "1.44"
+      DOCKER_HOST: unix:///var/run/docker.sock
+      TESTCONTAINERS_CHECKS_DISABLE: "true"
+
     steps:
       - uses: actions/checkout@v4
 
@@ -19,7 +24,11 @@ jobs:
           java-version: 21
           cache: maven
 
+      - name: Verify Docker
+        run: |
+          docker version
+          docker info
 
       - name: Build and test
         working-directory: server
-        run: ./mvnw -B clean test
+        run: ./mvnw -B clean test -Ddocker.api.version=1.44
