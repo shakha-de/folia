@@ -24,6 +24,7 @@ jobs:
 
       - name: Start Spring Boot Server
         run: |
+          cd server/ &&
           nohup java -jar target/*.jar & sleep 10
 
       - name: Setup Node.js
@@ -32,7 +33,7 @@ jobs:
           node-version: 24
 
       - name: Install Bruno CLI
-        run: npm install -g @bruno/cli
+        run: npm install -g @usebruno/cli
 
       - name: Run Bruno Tests
         run: |
