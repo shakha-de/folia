@@ -1,0 +1,44 @@
+name: API Tests
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 25 # For Spring Boot
+        uses: actions/setup-java@v5.2.0
+        with:
+          java-version: 25
+          distribution: temurin
+
+      - name: Build Spring Boot
+        run: ./mvnv clean package -DskipTests
+
+      - name: Start Spring Boot Server
+        run: |
+          nohup java -jar target/*.jar & sleep 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6.2.0
+        with:
+          node-version: 24
+
+      - name: Install Bruno CLI
+        run: npm install -g @bruno/cli
+
+      - name: Run Bruno Tests
+        run: |
+          cd tests/folia-api-tests/ &&
+          bruno test --env ci --reporter html results.html
+
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v6.0.0
+        with:
+          name: bruno-test-results
+          path: results.html
