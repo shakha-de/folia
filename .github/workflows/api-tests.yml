@@ -18,7 +18,9 @@ jobs:
           distribution: temurin
 
       - name: Build Spring Boot
-        run: ./mvnv clean package -DskipTests
+        run: |
+          cd server/ &&
+          ./mvnv clean package -DskipTests
 
       - name: Start Spring Boot Server
         run: |
