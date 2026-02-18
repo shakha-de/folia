@@ -16,7 +16,7 @@ jobs:
           POSTGRES_USER: folia
           POSTGRES_PASSWORD: folia
         options: >-
-          --health-cmd pg_isready -U folia -d folia
+          --health-cmd pg_isready
           --health-interval 10s
           --health-timeout 5s
           --health-retries 10
