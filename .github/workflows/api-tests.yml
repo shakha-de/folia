@@ -8,6 +8,21 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    services:
+      postgis:
+        image: postgis/postgis:18-3.6
+        env:
+          POSTGRES_DB: folia
+          POSTGRES_USER: folia
+          POSTGRES_PASSWORD: folia
+        options: >-
+          --health-cmd pg_isready -U folia -d folia
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+        ports:
+          - 5432:5432
+
     steps:
       - uses: actions/checkout@v6.0.2
 
@@ -21,6 +36,16 @@ jobs:
         run: |
           cd server/ &&
           ./mvnw clean package -DskipTests
+
+      - name: Wait for PostGIS
+        run: |
+          for i in {1..30}; do
+            if pg_isready -h localhost -p 5432 -U folia -d folia; then
+              echo "PostGIS ready!"
+              break
+            fi
+            sleep 1
+          done    
 
       - name: Start Spring Boot Server
         run: |
