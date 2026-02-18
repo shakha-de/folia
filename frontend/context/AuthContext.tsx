@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import api from "@/lib/api";
+import api, { ApiResponse, UserDto } from "@/lib/api";
 
 interface User {
     uuid: string;
@@ -9,6 +9,12 @@ interface User {
     email: string;
     role: string;
     enabled: boolean;
+}
+
+interface AuthResponse {
+    token: string;
+    refreshToken: string;
+    user: UserDto;
 }
 
 interface AuthContextType {
@@ -66,7 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         // Real authentication
         try {
-            const response = await api.post("/auth/login", credentials);
+            const response = await api.post<ApiResponse<AuthResponse>>("/auth/login", credentials);
             const { token, refreshToken, user: userData } = response.data.data;
 
             localStorage.setItem("accessToken", token);
@@ -105,7 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         // Real registration
         try {
-            const response = await api.post("/auth/register", data);
+            const response = await api.post<ApiResponse<AuthResponse>>("/auth/register", data);
 
             if (response.data.data?.token) {
                 const { token, refreshToken, user: userData } = response.data.data;

@@ -9,6 +9,15 @@ const api = axios.create({
     },
 });
 
+// Unified API Response structure
+export interface ApiResponse<T> {
+    success: boolean;
+    message: string;
+    data: T;
+    errors?: Record<string, string>;
+    timestamp: string;
+}
+
 export interface TreeDto {
     publicId: string;
     species: string;
@@ -45,7 +54,7 @@ export interface UserDto {
 
 export const fetchNearbyTrees = async (lat: number, lng: number, radiusMeters: number = 250): Promise<TreeDto[]> => {
     try {
-        const response = await api.get<{ data: TreeDto[] }>('/trees/nearby', {
+        const response = await api.get<ApiResponse<TreeDto[]>>('/trees/nearby', {
             params: { lat, lng, radiusMeters },
         });
         return response.data.data;
@@ -57,7 +66,7 @@ export const fetchNearbyTrees = async (lat: number, lng: number, radiusMeters: n
 
 export const fetchTreeStats = async (lat: number, lng: number, radiusMeters: number = 5000): Promise<TreeStats | null> => {
     try {
-        const response = await api.get<{ data: TreeStats }>('/trees/stats', {
+        const response = await api.get<ApiResponse<TreeStats>>('/trees/stats', {
             params: { lat, lng, radiusMeters },
         });
         return response.data.data;
