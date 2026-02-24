@@ -3,6 +3,7 @@ package com.folia.server.auth;
 import com.folia.server.common.messages.MessageKey;
 import com.folia.server.exceptions.TokenNotFoundException;
 import com.folia.server.exceptions.TokenRevokedException;
+import com.folia.server.exceptions.UserAlreadyExistsException;
 import com.folia.server.security.JwtService;
 import com.folia.server.user.UserDto;
 import com.folia.server.user.UserRepository;
@@ -37,6 +38,12 @@ public class AuthenticationService {
         }
 
         public AuthResponse register(RegisterRequest request) {
+                if (userRepository.existsByUsername(request.getUsername())) {
+                        throw new UserAlreadyExistsException(MessageKey.USER_USERNAME_ALREADY_EXISTS);
+                }
+                if (userRepository.existsByEmail(request.getEmail())) {
+                        throw new UserAlreadyExistsException(MessageKey.USER_EMAIL_ALREADY_EXISTS);
+                }
                 var user = com.folia.server.user.User.builder()
                                 .username(request.getUsername())
                                 .email(request.getEmail())

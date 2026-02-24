@@ -99,6 +99,12 @@ public class ApiExceptionHandler {
         return notFoundResponse(exception.getMessageKey(), exception.getArgs());
     }
 
+    @ExceptionHandler(UserAlreadyExistsException.class)
+    ResponseEntity<ApiResponse<Void>> handleUserAlreadyExists(UserAlreadyExistsException exception) {
+        String message = messageService.get(exception.getMessageKey(), LocaleContextHolder.getLocale(), exception.getArgs());
+        return ResponseUtils.conflict(message);
+    }
+
     @ExceptionHandler(TreeNotFoundException.class)
     ResponseEntity<ApiResponse<Void>> handleTreeNotFound(TreeNotFoundException exception) {
         return notFoundResponse(exception.getMessageKey(), exception.getArgs());
