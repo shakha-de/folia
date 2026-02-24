@@ -2,6 +2,21 @@ spring:
   application:
     name: server
 
+  messages:
+    encoding: UTF-8
+
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+      force-request: true
+      force-response: true
+    multipart:
+      max-request-size: 10MB
+      max-file-size: 10MB
+      enabled: true
+
   # ===========================
   # Database Configuration
   # ===========================
@@ -30,12 +45,6 @@ spring:
 
   flyway:
     enabled: false
-
-  servlet:
-    multipart:
-      max-request-size: 10MB
-      max-file-size: 10MB
-      enabled: true
 
 application:
   security:

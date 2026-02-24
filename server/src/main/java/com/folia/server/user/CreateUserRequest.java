@@ -5,15 +5,15 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 public record CreateUserRequest(
-        @NotBlank
-        @Size(min = 3, max = 50)
+        @NotBlank(message = "{validation.user.username.invalid}")
+        @Size(min = 3, max = 50, message = "{validation.user.username.short}")
         String username,
 
-        @Email
+        @Email(message = "{validation.user.email.invalid}")
         String email,
 
-        @NotBlank
-        @Size(min = 6, max = 200)
+        @NotBlank(message = "{validation.user.password.invalid}")
+        @Size(min = 8, max = 200, message = "{validation.user.password.weak}")
         String password
 ) {
 }

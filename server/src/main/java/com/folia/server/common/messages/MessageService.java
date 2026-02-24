@@ -15,4 +15,12 @@ public class MessageService {
     public String get(MessageKey key, Locale locale, Object... args) {
         return messageSource.getMessage(key.getValue(), args, locale);
     }
+
+    public String get(String rawKey, Locale locale, Object... args) {
+        return messageSource.getMessage(rawKey, args, rawKey, locale);
+    }
+
+    public String resolve(String rawKey, String defaultMessage, Locale locale, Object... args) {
+        return messageSource.getMessage(rawKey, args, defaultMessage, locale);
+    }
 }

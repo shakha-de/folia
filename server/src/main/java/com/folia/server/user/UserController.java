@@ -6,7 +6,6 @@ import com.folia.server.common.messages.MessageService;
 import com.folia.server.common.util.ResponseUtils;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -25,7 +24,6 @@ public class UserController {
     private final MessageService messageService;
 
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
     public ResponseEntity<ApiResponse<UserDto>> create(
         @RequestBody @Valid CreateUserRequest request,
         Locale locale

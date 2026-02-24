@@ -1,0 +1,8 @@
+meta {
+  name: folia
+}
+
+script:pre-request {
+  req.setHeader('Accept-Language', bru.getEnvVar("lang"));
+  
+}

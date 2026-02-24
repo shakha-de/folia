@@ -2,8 +2,10 @@ package com.folia.server.common.util;
 
 import com.folia.server.common.ApiResponse;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.Map;
 
@@ -29,8 +31,10 @@ public class ResponseUtils {
         Map<String, String> errors,
         HttpStatus status
     ) {
+        MediaType contentType = new MediaType(MediaType.APPLICATION_JSON, StandardCharsets.UTF_8);
         return ResponseEntity
             .status(status)
+            .contentType(contentType)
             .body(ApiResponse.<T>builder()
                 .success(success)
                 .message(message)

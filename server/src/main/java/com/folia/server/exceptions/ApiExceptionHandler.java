@@ -7,6 +7,7 @@ import com.folia.server.common.util.ResponseUtils;
 import jakarta.validation.ConstraintViolationException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.NonNull;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 @Slf4j
@@ -26,6 +28,18 @@ public class ApiExceptionHandler {
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     ResponseEntity<ApiResponse<Void>> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
+        MessageKey messageKey = getMessageKey(ex);
+
+        // ⚠️ SECURITY: Log detailed error server-side (only visible to developers/ops)
+        // Never expose database structure, constraints, or SQL details to clients
+        log.error("Data integrity violation: {}", ex.getMostSpecificCause().getMessage());
+
+        // Return generic, user-friendly message using i18n
+        String message = messageService.get(messageKey, LocaleContextHolder.getLocale());
+        return ResponseUtils.conflict(message);
+    }
+
+    private static @NonNull MessageKey getMessageKey(DataIntegrityViolationException ex) {
         String causeMessage = ex.getMostSpecificCause().getMessage();
         MessageKey messageKey;
 
@@ -39,38 +53,44 @@ public class ApiExceptionHandler {
         } else {
             messageKey = MessageKey.DATA_VALIDATION_FAILED;
         }
-
-        // ⚠️ SECURITY: Log detailed error server-side (only visible to developers/ops)
-        // Never expose database structure, constraints, or SQL details to clients
-        log.error("Data integrity violation: {}", ex.getMostSpecificCause().getMessage());
-
-        // Return generic, user-friendly message using i18n
-        String message = messageService.get(messageKey, LocaleContextHolder.getLocale());
-        return ResponseUtils.conflict(message);
+        return messageKey;
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     ResponseEntity<ApiResponse<Void>> handleValidationException(MethodArgumentNotValidException ex) {
         Map<String, String> errors = new HashMap<>();
+        Locale locale = LocaleContextHolder.getLocale();
         ex.getBindingResult().getFieldErrors().forEach(
-            error -> errors.put(error.getField(), error.getDefaultMessage())
+            error -> {
+                String fieldName = error.getField();
+                String translatedField = messageService.resolve("field." + fieldName, fieldName, locale);
+                // Resilience: Use fieldName if translation service returns null (e.g. in tests with missing mocks)
+                String key = translatedField != null ? translatedField : fieldName;
+                errors.put(key, error.getDefaultMessage());
+            }
         );
-        return ResponseUtils.badRequest("Validation failed", errors);
+        String message = messageService.get(MessageKey.VALIDATION_FAILED, locale);
+        return ResponseUtils.badRequest(message != null ? message : "Validation failed", errors);
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
     ResponseEntity<ApiResponse<Void>> handleConstraintViolation(ConstraintViolationException exception) {
         Map<String, String> errors = new HashMap<>();
+        Locale locale = LocaleContextHolder.getLocale();
         exception.getConstraintViolations().forEach(
             violation -> {
                 String propertyPath = violation.getPropertyPath().toString();
                 String fieldName = propertyPath.contains(".")
                     ? propertyPath.substring(propertyPath.lastIndexOf('.') + 1)
                     : propertyPath;
-                errors.put(fieldName, violation.getMessage());
+                String translatedField = messageService.resolve("field." + fieldName, fieldName, locale);
+                // Resilience: Use fieldName if translation service returns null
+                String key = translatedField != null ? translatedField : fieldName;
+                errors.put(key, violation.getMessage());
             }
         );
-        return ResponseUtils.badRequest("Validation failed", errors);
+        String message = messageService.get(MessageKey.VALIDATION_FAILED, locale);
+        return ResponseUtils.badRequest(message != null ? message : "Validation failed", errors);
     }
 
     @ExceptionHandler(UserNotFoundException.class)

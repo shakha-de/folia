@@ -2,6 +2,10 @@ spring:
   application:
     name: server
 
+  messages:
+    encoding: UTF-8
+
+
   # ===========================
   # Database Configuration
   # ===========================
@@ -38,7 +42,16 @@ spring:
       max-request-size: 10MB
       max-file-size: 10MB
       enabled: true
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+      force-request: true
+      force-response: true
 
 jwt:
   secret: "${JWT_SECRET:dev-secret-change-me-please-change-me-please}"
   expiration: ${JWT_EXPIRATION:3600000}
+
+
+

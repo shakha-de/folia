@@ -21,7 +21,7 @@ body:json {
 assert {
   res.status: eq 201
   res.body.success: eq true
-  res.body.message: contains registered successfully
+  res.body.message: contains created successfully
   res.body.data: isNotEmpty
   res.body.data.user.role: eq CITIZEN
   res.body.data.user.enabled: isTruthy

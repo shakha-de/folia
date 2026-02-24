@@ -41,15 +41,20 @@ public enum MessageKey {
     AUTH_REFRESH_TOKEN_EXPIRED("auth.refresh.token.expired"),
     AUTH_REFRESH_TOKEN_REVOKED("auth.refresh.token.revoked"),
     AUTH_REFRESH_TOKEN_NOT_FOUND("auth.refresh.token.not.found"),
+    AUTH_REFRESH_TOKEN_REFRESHED_SUCCESS("auth.refresh.token.refresh.success"),
 
     // ============== TREE: ERROR ============
     TREE_NOT_FOUND("tree.not.found"),
 
     // ============== VALIDATION (USER) ========
+    VALIDATION_FAILED("validation.failed"),
     VALIDATION_USER_USERNAME_INVALID("validation.user.username.invalid"),
     VALIDATION_USER_EMAIL_INVALID("validation.user.email.invalid"),
     VALIDATION_USER_PASSWORD_WEAK("validation.user.password.weak"),
+    VALIDATION_USER_PASSWORD_INVALID("validation.user.password.invalid"),
     VALIDATION_USER_PHONE_INVALID("validation.user.phone.invalid"),
+    VALIDATION_USER_USERNAME_SHORT("validation.user.username.short"),
+
 
     // ============== LOCATION / SETTINGS =======
     USER_HOME_LOCATION_INVALID("user.location.invalid"),
