@@ -1,0 +1,12 @@
+meta {
+  name: german
+}
+
+auth {
+  mode: inherit
+}
+
+script:pre-request {
+  req.setHeader('Accept-Language', "de-DE");
+  
+}

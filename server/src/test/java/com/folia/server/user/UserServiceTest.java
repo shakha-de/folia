@@ -4,11 +4,9 @@ import com.folia.server.common.messages.MessageKey;
 import com.folia.server.exceptions.UserNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.List;
 import java.util.Optional;
@@ -24,34 +22,8 @@ class UserServiceTest {
     @Mock
     UserRepository userRepository;
 
-    @Mock
-    PasswordEncoder passwordEncoder;
-
     @InjectMocks
     UserService userService;
-
-    @Test
-    void createUser_encodesPassword_andSavesDefaultCitizenEnabled() {
-        CreateUserRequest request = new CreateUserRequest("alice", "alice@example.com", "secret123");
-        when(passwordEncoder.encode("secret123")).thenReturn("hashed");
-        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0, User.class));
-
-        User created = userService.createUser(request);
-
-        ArgumentCaptor<User> savedCaptor = ArgumentCaptor.forClass(User.class);
-        verify(userRepository).save(savedCaptor.capture());
-        User saved = savedCaptor.getValue();
-
-        assertThat(saved.getUsername()).isEqualTo("alice");
-        assertThat(saved.getEmail()).isEqualTo("alice@example.com");
-        assertThat(saved.getPasswordHash()).isEqualTo("hashed");
-        assertThat(saved.getRole()).isEqualTo(UserRole.CITIZEN);
-        assertThat(saved.isEnabled()).isTrue();
-        assertThat(saved.getUuid()).isNotNull();
-
-        assertThat(created).isSameAs(saved);
-        verify(passwordEncoder).encode("secret123");
-    }
 
     @Test
     void getAllUsers_delegatesToRepository() {

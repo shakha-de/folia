@@ -1,0 +1,32 @@
+meta {
+  name: Register User with short username
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{host}}/api/auth/register
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "username":"u2",
+    "email":"mymail@example.com",
+    "password":"somestrongpassword"
+  }
+}
+
+assert {
+  res.status: eq 400
+  res.body.success: eq false
+  res.body.message: contains Validation failed. Please check your input
+  res.body.data: isNull
+  res.body.errors.Username: contains Username must be at least 3 char
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

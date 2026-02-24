@@ -29,7 +29,6 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -50,45 +49,6 @@ class UserControllerTest {
     @BeforeEach
     void setUp() {
         mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
-    }
-
-    @Test
-    void create_validRequest_returns201AndApiResponse() throws Exception {
-        UUID uuid = UUID.fromString("00000000-0000-0000-0000-000000000001");
-        User created = User.builder()
-            .uuid(uuid)
-            .username("alice")
-            .email("alice@example.com")
-            .passwordHash("hashed")
-            .role(UserRole.CITIZEN)
-            .isEnabled(true)
-            .build();
-
-        when(userService.createUser(any(CreateUserRequest.class))).thenReturn(created);
-        when(messageService.get(eq(MessageKey.USER_CREATED), any(Locale.class), any(Object[].class))).thenReturn("created");
-
-        mockMvc.perform(post("/api/users")
-                .contentType(APPLICATION_JSON)
-                .content("{\"username\":\"alice\",\"email\":\"alice@example.com\",\"password\":\"secret123\"}"))
-            .andExpect(status().isCreated())
-            .andExpect(jsonPath("$.success").value(true))
-            .andExpect(jsonPath("$.message").value("created"))
-            .andExpect(jsonPath("$.data.uuid").value(uuid.toString()))
-            .andExpect(jsonPath("$.data.username").value("alice"))
-            .andExpect(jsonPath("$.data.email").value("alice@example.com"))
-            .andExpect(jsonPath("$.data.role").value("CITIZEN"))
-            .andExpect(jsonPath("$.data.enabled").value(true));
-
-        verify(userService).createUser(any(CreateUserRequest.class));
-        verify(messageService).get(eq(MessageKey.USER_CREATED), any(Locale.class), any(Object[].class));
-    }
-
-    @Test
-    void create_invalidBody_returns400() throws Exception {
-        mockMvc.perform(post("/api/users")
-                .contentType(APPLICATION_JSON)
-                .content("{\"username\":\"ab\",\"email\":\"not-an-email\",\"password\":\"123\"}"))
-            .andExpect(status().isBadRequest());
     }
 
     @Test

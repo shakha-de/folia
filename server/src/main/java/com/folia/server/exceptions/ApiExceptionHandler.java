@@ -11,6 +11,7 @@ import org.jspecify.annotations.NonNull;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -126,5 +127,12 @@ public class ApiExceptionHandler {
     private ResponseEntity<ApiResponse<Void>> notFoundResponse(MessageKey messageKey, Object[] args) {
         String message = messageService.get(messageKey, LocaleContextHolder.getLocale(), args);
         return ResponseUtils.notFound(message);
+    }
+
+    @ExceptionHandler(BadCredentialsException.class)
+    ResponseEntity<ApiResponse<Void>> handleBadCredentialsException(BadCredentialsException exception) {
+        Locale locale = LocaleContextHolder.getLocale();
+        String message = messageService.get(MessageKey.AUTH_INVALID_CREDENTIALS, locale);
+        return ResponseUtils.badRequest(message != null ? message : "Invalid username or password");
     }
 }

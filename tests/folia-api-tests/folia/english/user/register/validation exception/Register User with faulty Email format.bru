@@ -1,0 +1,32 @@
+meta {
+  name: Register User with faulty Email format
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{host}}/api/auth/register
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "username":"username2",
+    "email":"mymailexample.com",
+    "password":"somestrongpassword"
+  }
+}
+
+assert {
+  res.status: eq 400
+  res.body.success: eq false
+  res.body.message: contains Validation failed. Please check your input
+  res.body.data: isNull
+  res.body.errors.Email: contains Email address is invalid
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
