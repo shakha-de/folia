@@ -97,6 +97,7 @@ export default function TreesMapView({ trees, center, onViewChange }: TreesMapVi
 
     useEffect(() => {
         fixLeafletIcons();
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setMounted(true);
     }, []);
 

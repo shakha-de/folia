@@ -98,8 +98,6 @@ export default function TreesPage() {
 
     useEffect(() => {
         if (!user) return;
-        setLocating(true);
-        setLocError(false);
         getUserLocation().then((loc) => {
             setLocating(false);
             if (!loc) { setLocError(true); return; }

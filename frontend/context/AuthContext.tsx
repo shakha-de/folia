@@ -17,11 +17,25 @@ interface AuthResponse {
     user: UserDto;
 }
 
+interface LoginCredentials {
+    identifier?: string;
+    username?: string;
+    email?: string;
+    password: string;
+}
+
+interface RegisterData {
+    username: string;
+    email: string;
+    password: string;
+    [key: string]: unknown;
+}
+
 interface AuthContextType {
     user: User | null;
     loading: boolean;
-    login: (credentials: any) => Promise<void>;
-    register: (data: any) => Promise<void>;
+    login: (credentials: LoginCredentials) => Promise<void>;
+    register: (data: RegisterData) => Promise<void>;
     logout: () => void;
     isAuthenticated: boolean;
 }
@@ -52,6 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             localStorage.removeItem("accessToken");
             localStorage.removeItem("refreshToken");
             localStorage.removeItem("user");
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setLoading(false);
             return;
         }
@@ -62,7 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setLoading(false);
     }, []);
 
-    const login = async (credentials: any) => {
+    const login = async (credentials: LoginCredentials) => {
         if (MOCK_AUTH_ENABLED) {
             // Mock authentication - no backend call
             console.log("🎭 Mock authentication enabled - bypassing backend");
@@ -108,7 +123,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
     };
 
-    const register = async (data: any) => {
+    const register = async (data: RegisterData) => {
         if (MOCK_AUTH_ENABLED) {
             // Mock registration - no backend call
             console.log("🎭 Mock authentication enabled - bypassing backend");

@@ -12,7 +12,10 @@ vi.mock('@/components/Footer', () => ({
 
 // Mock next/image
 vi.mock('next/image', () => ({
-  default: (props: any) => <img {...props} />,
+  default: ({ src, className }: { src: string; alt?: string; className?: string }) => (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={src} alt="" className={className} />
+  ),
 }))
 
 describe('Home Page', () => {

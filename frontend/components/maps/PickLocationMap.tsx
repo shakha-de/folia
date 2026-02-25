@@ -43,6 +43,7 @@ export default function PickLocationMap({ lat, lng, onLocationChange }: PickLoca
 
     useEffect(() => {
         fixLeafletIcons();
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setMounted(true);
     }, []);
 

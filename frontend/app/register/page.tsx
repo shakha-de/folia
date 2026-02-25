@@ -24,8 +24,9 @@ export default function RegisterPage() {
         try {
             await register({ username, email, password });
             router.push("/dashboard");
-        } catch (err: any) {
-            setError(err.response?.data?.message || "Registration failed. Please check your details.");
+        } catch (err: unknown) {
+            const errorRes = err as { response?: { data?: { message?: string } } };
+            setError(errorRes?.response?.data?.message || "Registration failed. Please check your details.");
         } finally {
             setIsLoading(false);
         }

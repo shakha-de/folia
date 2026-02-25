@@ -20,8 +20,6 @@ vi.mock('leaflet', () => {
 // ── react-leaflet mock ──────────────────────────────────────────────────────
 // MapContainer renders its children; all others are lightweight stubs.
 vi.mock('react-leaflet', () => {
-    const { useEffect } = require('react')
-
     const MapContainer = ({ children }: { children: React.ReactNode }) => (
         <div data-testid="map-container">{children}</div>
     )

@@ -43,7 +43,7 @@ export default function PrivacyPolicy() {
 
                     <section>
                         <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-4">7. Updates To This Policy</h2>
-                        <p>We may update this privacy policy from time to time. The updated version will be indicated by an updated "Revised" date and the updated version will be effective as soon as it is accessible.</p>
+                        <p>We may update this privacy policy from time to time. The updated version will be indicated by an updated &ldquo;Revised&rdquo; date and the updated version will be effective as soon as it is accessible.</p>
                     </section>
                 </div>
             </main>

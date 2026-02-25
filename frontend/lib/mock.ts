@@ -1,4 +1,3 @@
-import { UserDto } from './api';
 // Test data
 export interface UserGamification {
     rank: string;

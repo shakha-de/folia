@@ -29,8 +29,9 @@ export default function LoginPage() {
         try {
             await login({ identifier, password });
             router.push("/dashboard");
-        } catch (err: any) {
-            setError(err.response?.data?.message || "Invalid credentials. Please try again.");
+        } catch (err: unknown) {
+            const errorRes = err as { response?: { data?: { message?: string } } };
+            setError(errorRes?.response?.data?.message || "Invalid credentials. Please try again.");
         } finally {
             setIsLoading(false);
         }
@@ -123,7 +124,7 @@ export default function LoginPage() {
 
                 <div className="mt-6 text-center">
                     <p className="text-sm text-slate-600 dark:text-[#9db9a1]">
-                        Don't have an account?{" "}
+                        Don&apos;t have an account?{" "}
                         <Link href="/register" className="font-bold text-primary hover:text-[#0fd630] transition-colors">
                             Sign up
                         </Link>

@@ -6,7 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { ThemeToggle } from "./ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
-import { Menu, X } from "lucide-react";
+import { Menu } from "lucide-react";
 
 export default function Header() {
     const { user, logout, isAuthenticated } = useAuth();

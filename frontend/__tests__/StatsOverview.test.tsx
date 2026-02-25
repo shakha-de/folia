@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import { describe, it, expect } from 'vitest'
 import StatsOverview from '../components/dashboard/StatsOverview'
+import type { TreeStats } from '../lib/api'
 
 describe('StatsOverview', () => {
   it('renders nothing when stats are null', () => {
@@ -9,11 +10,14 @@ describe('StatsOverview', () => {
   })
 
   it('renders stats correctly when provided', () => {
-    const mockStats = {
+    const mockStats: TreeStats = {
       totalTrees: 150,
       treesNeedingWater: 12,
-      lastUpdate: '2026-02-09',
-    } as any
+      treesBySpecies: {},
+      treesByHealth: {},
+      treesBySoilMoisture: {},
+      generatedAt: '2026-02-09',
+    }
 
     render(<StatsOverview stats={mockStats} />)
     

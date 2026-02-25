@@ -13,12 +13,12 @@ export default function TermsOfService() {
                 <div className="prose dark:prose-invert prose-slate max-w-none space-y-6 text-slate-600 dark:text-slate-300 font-body leading-relaxed">
                     <section>
                         <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-4">1. Agreement to Terms</h2>
-                        <p>These Terms of Service constitute a legally binding agreement made between you, whether personally or on behalf of an entity ("you") and Folia ("we," "us" or "our"), concerning your access to and use of our website.</p>
+                        <p>These Terms of Service constitute a legally binding agreement made between you, whether personally or on behalf of an entity (&ldquo;you&rdquo;) and Folia (&ldquo;we,&rdquo; &ldquo;us&rdquo; or &ldquo;our&rdquo;), concerning your access to and use of our website.</p>
                     </section>
 
                     <section>
                         <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-4">2. Intellectual Property Rights</h2>
-                        <p>Unless otherwise indicated, the Website is our proprietary property and all source code, databases, functionality, software, website designs, audio, video, text, photographs, and graphics on the Website (collectively, the "Content") and the trademarks, service marks, and logos contained therein (the "Marks") are owned or controlled by us or licensed to us.</p>
+                        <p>Unless otherwise indicated, the Website is our proprietary property and all source code, databases, functionality, software, website designs, audio, video, text, photographs, and graphics on the Website (collectively, the &ldquo;Content&rdquo;) and the trademarks, service marks, and logos contained therein (the &ldquo;Marks&rdquo;) are owned or controlled by us or licensed to us.</p>
                     </section>
 
                     <section>

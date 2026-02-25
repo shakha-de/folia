@@ -22,8 +22,6 @@ vi.mock('leaflet', () => {
 
 // ── react-leaflet mock ──────────────────────────────────────────────────────
 vi.mock('react-leaflet', () => {
-    const { useEffect } = require('react')
-
     const MapContainer = ({ children }: { children: React.ReactNode }) => (
         <div data-testid="map-container">{children}</div>
     )
@@ -39,7 +37,7 @@ vi.mock('react-leaflet', () => {
     })
 
     // Capture the handlers so tests can simulate map clicks
-    const useMapEvents = vi.fn((handlers: Record<string, Function>) => {
+    const useMapEvents = vi.fn((handlers: Record<string, (...args: unknown[]) => unknown>) => {
         capturedClickHandler = handlers.click as (e: { latlng: { lat: number; lng: number } }) => void
         return null
     })
