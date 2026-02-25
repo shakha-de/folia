@@ -9,6 +9,18 @@ const api = axios.create({
     },
 });
 
+// Automatically attach Bearer token from localStorage on every request
+api.interceptors.request.use((config) => {
+    if (typeof window !== 'undefined') {
+        const token = localStorage.getItem('accessToken');
+        if (token) {
+            config.headers = config.headers ?? {};
+            config.headers['Authorization'] = `Bearer ${token}`;
+        }
+    }
+    return config;
+});
+
 // Unified API Response structure
 export interface ApiResponse<T> {
     success: boolean;
@@ -22,15 +34,14 @@ export interface TreeDto {
     publicId: string;
     species: string;
     commonName: string;
-    location: {
-        x: number; // lng
-        y: number; // lat
-        coordinates?: number[];
-    } | { lat: number; lng: number }; // adjust based on actual API response for Point
+    lat: number;
+    lng: number;
     soilMoistureLevel: 'DRY' | 'MODERATE' | 'WET';
-    healthStatus: 'HEALTHY' | 'NEEDS_CARE' | 'CRITICAL';
+    healthStatus: 'HEALTHY' | 'STRESSED' | 'DYING' | 'DEAD' | 'REMOVED';
     lastWateredAt?: string;
     nextWateringDue?: string;
+    createdAt?: string;
+    updatedAt?: string;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     metadata: Record<string, any>;
 }
@@ -72,6 +83,29 @@ export const fetchTreeStats = async (lat: number, lng: number, radiusMeters: num
         return response.data.data;
     } catch (error) {
         console.error("Error fetching tree stats:", error);
+        return null;
+    }
+};
+
+export type HealthStatus = 'HEALTHY' | 'STRESSED' | 'DYING' | 'DEAD' | 'REMOVED';
+export type SoilMoistureLevel = 'DRY' | 'MODERATE' | 'WET';
+
+export interface CreateTreeDto {
+    species: string;
+    commonName: string;
+    lat: number;
+    lng: number;
+    soilMoistureLevel: SoilMoistureLevel;
+    healthStatus: HealthStatus;
+    metadata?: Record<string, unknown>;
+}
+
+export const createTree = async (data: CreateTreeDto): Promise<TreeDto | null> => {
+    try {
+        const response = await api.post<ApiResponse<TreeDto>>('/trees', data);
+        return response.data.data;
+    } catch (error) {
+        console.error('Error creating tree:', error);
         return null;
     }
 };

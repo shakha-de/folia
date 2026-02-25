@@ -20,6 +20,6 @@ describe('StatsOverview', () => {
     expect(screen.getByText('150')).toBeInTheDocument()
     expect(screen.getByText('12')).toBeInTheDocument()
     expect(screen.getByText(/Trees Registered/i)).toBeInTheDocument()
-    expect(screen.getByText(/Trees Needing Water/i)).toBeInTheDocument()
+    expect(screen.getByText(/Waterings Logged/i)).toBeInTheDocument()
   })
 })

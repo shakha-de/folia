@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
@@ -23,7 +22,12 @@ export default function Home() {
                   <p className="text-lg md:text-xl text-slate-600 dark:text-slate-300 font-body leading-relaxed max-w-xl">Join the community saving urban trees in the arid heart of Central Asia. Together, we can cool our cities, combat heatwaves, and protect our future canopy.</p>
                 </div>
                 <div className="flex flex-wrap gap-4 mt-2">
-                  <button className="flex h-12 md:h-14 min-w-40 cursor-pointer items-center justify-center rounded-lg bg-primary hover:bg-[#0fd630] transition-colors px-6 text-[#111812] text-base font-bold shadow-lg shadow-primary/20">Become guardian</button>
+                  <button
+                    onClick={() => window.location.assign("/register")}
+                    className="flex h-12 md:h-14 min-w-40 cursor-pointer items-center justify-center rounded-lg bg-primary hover:bg-[#0fd630] transition-colors px-6 text-[#111812] text-base font-bold shadow-lg shadow-primary/20"
+                  >
+                    Become guardian
+                  </button>
                   <Link
                     href="/learn-more"
                     className="flex h-12 items-center justify-center md:h-14 min-w-40 cursor-pointer rounded-lg bg-white dark:bg-[#28392b] border border-slate-200 dark:border-transparent hover:bg-slate-50 dark:hover:bg-[#324736] transition-colors px-6 text-slate-900 dark:text-white text-base font-bold"
@@ -31,32 +35,12 @@ export default function Home() {
                     Learn more
                   </Link>
                 </div>
-                <div className="flex items-center gap-3 mt-4 text-sm text-slate-500 dark:text-slate-400">
-                  <div className="flex -space-x-2 overflow-hidden">
-                    <Image
-                      className="inline-block h-8 w-8 rounded-full ring-2 ring-white dark:ring-background-dark"
-                      src="https://lh3.googleusercontent.com/aida-public/AB6AXuCGL15mtCkJiKyhh0Z6LMCBg7AONQIbZFYkexsORweH_K49eoiKEa6o7BRYbPlBtr2PTGLhDqGMLdN6dpeBqIZUZkPKzxRGhm7HI3X5RYC1tW7gjIDtE54h8zIayLBwhfft8_pwy0K801C3W_-TaqoRlunolJlDoN3OdFhh4CjqPp-wzwKF6csDfOBHdnpj5_uu8GxWodTohea-Z5_j4pzv4M59_Ig5nek0aXHBGVIDbyv9svGq0CUPwjLRq1xx6MdMk8eSd0XrhDxc"
-                      alt="User Avatar 1"
-                      width={32}
-                      height={32}
-                    />
-                    <Image
-                      className="inline-block h-8 w-8 rounded-full ring-2 ring-white dark:ring-background-dark"
-                      src="https://lh3.googleusercontent.com/aida-public/AB6AXuDjYQYR_EiutYAdoQ3rL5xfR_tPowsMTqvseplwaUvYTY-nHxZY6kIKpHAmQbkVXPjNqyAsjaK83OtUvC785l8D4zans_5yVJob_XXc8VzQAuxGeT_vEz0uVVO-pIom8tIAIuxgG956XpccNwXwAJDW6qX_CW5j669ufL5CtTlz_AQBi029UobwrWvBrnF6M3t6VNcqptEojzSQqsPzlJc1pcJCkq52xz168rKGuawgAZ443iEAOQ8bryyO6k2mZ02FfVc4jGXORm07"
-                      alt="User Avatar 2"
-                      width={32}
-                      height={32}
-                    />
-                    <Image
-                      className="inline-block h-8 w-8 rounded-full ring-2 ring-white dark:ring-background-dark"
-                      src="https://lh3.googleusercontent.com/aida-public/AB6AXuBZ3A3gazPdLqn1xFmRY09qHl3Cd8I0nRUNXo4S2i-t3OxMo7xJkxV8Y6AXm7vSx5vIDV8-nfETUiD89a9_q5Oag2kyUj6TqJ9VLQaez-E8OfXXGitoXmZZPQC_cnh7pJvd2NzVThxECw9m79yXCd_UnbUrpM7c14g-5996fpWEtIjG9oZ3SfJTNWbNNYwvaHptTham4_5BCWxeP2hP7XwKEXr1JiR2JV2pR_i596zI1uw7B4zlz8YbdnMjKShifrN_SqupEzd7JSjI"
-                      alt="User Avatar 3"
-                      width={32}
-                      height={32}
-                    />
-                  </div>
-                  <p>Join <strong>2,500</strong> guardians today</p>
-                </div>
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  Already a guardian?{" "}
+                  <Link href="/dashboard" className="text-primary hover:underline font-medium">
+                    Go to your dashboard
+                  </Link>
+                </p>
               </div>
               <div className="relative order-1 lg:order-2">
                 <div className="aspect-4/3 w-full rounded-2xl overflow-hidden shadow-2xl relative">

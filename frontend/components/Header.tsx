@@ -29,6 +29,14 @@ export default function Header() {
                         >
                             Almanac
                         </Link>
+                        {isAuthenticated && (
+                            <Link
+                                href="/trees"
+                                className="text-sm font-bold text-slate-700 dark:text-slate-200 hover:text-primary dark:hover:text-primary transition-colors"
+                            >
+                                Trees
+                            </Link>
+                        )}
                         <Link
                             href="/learn-more"
                             className="text-sm font-bold text-slate-700 dark:text-slate-200 hover:text-primary dark:hover:text-primary transition-colors"
@@ -81,6 +89,16 @@ export default function Header() {
                                     Almanac
                                 </Link>
                             </SheetClose>
+                            {isAuthenticated && (
+                                <SheetClose asChild>
+                                    <Link
+                                        href="/trees"
+                                        className="text-base font-bold text-slate-700 dark:text-slate-200 hover:text-primary px-4 py-2 rounded-lg transition-colors"
+                                    >
+                                        Trees
+                                    </Link>
+                                </SheetClose>
+                            )}
                             <SheetClose asChild>
                                 <Link
                                     href="/learn-more"

@@ -45,6 +45,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        // Scrub any stale mock tokens that would cause MalformedJwtException on the server.
+        // A valid JWT always has exactly 2 period characters (header.payload.signature).
+        const storedToken = localStorage.getItem("accessToken");
+        if (storedToken && (storedToken.match(/\./g) || []).length !== 2) {
+            localStorage.removeItem("accessToken");
+            localStorage.removeItem("refreshToken");
+            localStorage.removeItem("user");
+            setLoading(false);
+            return;
+        }
         const storedUser = localStorage.getItem("user");
         if (storedUser) {
             setUser(JSON.parse(storedUser));
@@ -61,12 +71,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             // Simulate network delay
             await new Promise(resolve => setTimeout(resolve, 500));
 
+            const identifier = String(
+                credentials?.identifier ?? credentials?.username ?? credentials?.email ?? ""
+            ).trim();
+            const identifierLooksLikeEmail = identifier.includes("@");
+
+            const mockUser = {
+                ...MOCK_USER,
+                username: identifier || MOCK_USER.username,
+                email: identifierLooksLikeEmail
+                    ? identifier
+                    : (credentials?.email ?? MOCK_USER.email),
+            };
+
             // Set mock tokens and user data
             localStorage.setItem("accessToken", "mock-access-token");
             localStorage.setItem("refreshToken", "mock-refresh-token");
-            localStorage.setItem("user", JSON.stringify(MOCK_USER));
+            localStorage.setItem("user", JSON.stringify(mockUser));
 
-            setUser(MOCK_USER);
+            setUser(mockUser);
             return;
         }
 

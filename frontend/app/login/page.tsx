@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -12,8 +12,14 @@ export default function LoginPage() {
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
     const [isLoading, setIsLoading] = useState(false);
-    const { login } = useAuth();
+    const { login, isAuthenticated, loading } = useAuth();
     const router = useRouter();
+
+    useEffect(() => {
+        if (!loading && isAuthenticated) {
+            router.replace("/dashboard");
+        }
+    }, [isAuthenticated, loading, router]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -22,7 +28,7 @@ export default function LoginPage() {
 
         try {
             await login({ identifier, password });
-            router.push("/");
+            router.push("/dashboard");
         } catch (err: any) {
             setError(err.response?.data?.message || "Invalid credentials. Please try again.");
         } finally {
@@ -98,7 +104,7 @@ export default function LoginPage() {
                         </div>
 
                         <div className="text-sm">
-                            <a href="#" className="font-bold text-primary hover:text-[#0fd630] transition-colors">
+                            <a href="/learn-more" className="font-bold text-primary hover:text-[#0fd630] transition-colors">
                                 Forgot password?
                             </a>
                         </div>

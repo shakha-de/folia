@@ -26,7 +26,7 @@ public class TreeController {
     public ResponseEntity<ApiResponse<List<TreeDto>>> nearby(
             @RequestParam @NotNull @Min(-90) @Max(90) Double lat,
             @RequestParam @NotNull @Min(-180) @Max(180) Double lng,
-            @RequestParam(defaultValue = "250") @Min(1) @Max(20000) Integer radiusMeters) {
+            @RequestParam(defaultValue = "250") @Min(1) @Max(30000) Integer radiusMeters) {
         List<Tree> trees = treeService.findTreesNearby(lat, lng, radiusMeters);
         return ResponseUtils.ok(
                 trees.stream()
