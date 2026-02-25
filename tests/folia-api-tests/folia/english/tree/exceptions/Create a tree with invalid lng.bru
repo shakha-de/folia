@@ -1,0 +1,43 @@
+meta {
+  name: Create a tree with invalid lng
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{host}}/api/trees
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{user1Token}}
+}
+
+body:json {
+  {
+    "species": "Quercus robur",
+    "commonName": "Stieleiche",
+    "lat": 51.4822,
+    "lng": 181.9693,
+    "soilMoistureLevel": "MODERATE",
+    "healthStatus": "HEALTHY",
+    "metadata": {
+      "plantedDate": "2023-05-15",
+      "caretakerId": "staff_042"
+    }
+  }
+}
+
+assert {
+  res.status: eq 400
+  res.body.success: eq false
+  res.body.errors: isNotEmpty
+  res.body.message: contains Validation failed.
+  res.body.errors.lng: contains Longitude must be a valid number between -180 and 180
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

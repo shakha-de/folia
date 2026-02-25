@@ -1,0 +1,43 @@
+meta {
+  name: Create a tree
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{host}}/api/trees
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{user1Token}}
+}
+
+body:json {
+  {
+    "species": "",
+    "commonName": "",
+    "soilMoistureLevel": "MODERATE",
+    "healthStatus": "HEALTHY",
+    "metadata": {
+      "plantedDate": "2023-05-15",
+      "caretakerId": "staff_042"
+    }
+  }
+}
+
+assert {
+  res.status: eq 400
+  res.body.success: eq false
+  res.body.errors: isNotEmpty
+  res.body.message: contains Validation failed.
+  res.body.errors.lng: contains Longitude is required
+  res.body.errors.lat: contains Latitude is required
+  res.body.errors.species: contains Species name is required
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

@@ -30,6 +30,7 @@ public enum MessageKey {
     // ================= DATA INTEGRITY =========
     DATA_DUPLICATE_VALUE("data.duplicate.value"),
     DATA_VALIDATION_FAILED("data.validation.failed"),
+    INVALID_ENUM_VALUE("error.invalid.enum.value"),
 
     // ================= AUTH ===================
     AUTH_LOGIN_SUCCESS("auth.login.success"),
@@ -56,6 +57,14 @@ public enum MessageKey {
     VALIDATION_USER_PHONE_INVALID("validation.user.phone.invalid"),
     VALIDATION_USER_USERNAME_SHORT("validation.user.username.short"),
 
+    // ============== VALIDATION (TREE) ========
+    VALIDATION_TREE_SPECIES_BLANK("validation.tree.species.blank"),
+    VALIDATION_TREE_LAT_NULL("validation.tree.lat.null"),
+    VALIDATION_TREE_LNG_NULL("validation.tree.lng.null"),
+    VALIDATION_TREE_LAT_INVALID("validation.tree.lat.invalid"),
+    VALIDATION_TREE_LNG_INVALID("validation.tree.lng.invalid"),
+    VALIDATION_TREE_SOIL_MOISTURE_NULL("validation.tree.soilMoisture.null"),
+    VALIDATION_TREE_HEALTH_STATUS_NULL("validation.tree.healthStatus.null"),
 
     // ============== LOCATION / SETTINGS =======
     USER_HOME_LOCATION_INVALID("user.location.invalid"),

@@ -1,0 +1,43 @@
+meta {
+  name: Create a tree with invalid lat
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{host}}/api/trees
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{user1Token}}
+}
+
+body:json {
+  {
+    "species": "Quercus robur",
+    "commonName": "Stieleiche",
+    "lat": 510.4822,
+    "lng": 18.9693,
+    "soilMoistureLevel": "MODERATE",
+    "healthStatus": "HEALTHY",
+    "metadata": {
+      "plantedDate": "2023-05-15",
+      "caretakerId": "staff_042"
+    }
+  }
+}
+
+assert {
+  res.status: eq 400
+  res.body.success: eq false
+  res.body.errors: isNotEmpty
+  res.body.message: contains Validation failed.
+  res.body.errors.lat: contains Latitude must be a valid number between -90 and 90
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

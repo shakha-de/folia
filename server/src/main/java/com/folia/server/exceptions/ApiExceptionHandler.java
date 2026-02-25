@@ -1,5 +1,6 @@
 package com.folia.server.exceptions;
 
+import tools.jackson.databind.exc.InvalidFormatException;
 import com.folia.server.common.ApiResponse;
 import com.folia.server.common.messages.MessageKey;
 import com.folia.server.common.messages.MessageService;
@@ -11,14 +12,17 @@ import org.jspecify.annotations.NonNull;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RestControllerAdvice
@@ -26,6 +30,30 @@ import java.util.Map;
 public class ApiExceptionHandler {
 
     private final MessageService messageService;
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    ResponseEntity<ApiResponse<Void>> handleHttpMessageNotReadable(HttpMessageNotReadableException ex) {
+        Locale locale = LocaleContextHolder.getLocale();
+        Throwable cause = ex.getCause();
+        if (cause instanceof InvalidFormatException ife && ife.getTargetType() != null && ife.getTargetType().isEnum()) {
+            String invalidValue = String.valueOf(ife.getValue());
+            String fieldName = ife.getPath().isEmpty() ? "unknown" : ife.getPath().getLast().getPropertyName();
+            String acceptedValues = Arrays.stream(ife.getTargetType().getEnumConstants())
+                    .map(e -> ((Enum<?>) e).name())
+                    .collect(Collectors.joining(", "));
+            String translatedField = messageService.resolve("field." + fieldName, fieldName, locale);
+            String key = translatedField != null ? translatedField : fieldName;
+            String errorMessage = messageService.get(MessageKey.INVALID_ENUM_VALUE, locale,
+                    new Object[]{invalidValue, fieldName, acceptedValues});
+            Map<String, String> errors = new HashMap<>();
+            errors.put(key, errorMessage);
+            String message = messageService.get(MessageKey.VALIDATION_FAILED, locale);
+            return ResponseUtils.badRequest(message != null ? message : "Validation failed", errors);
+        }
+        log.error("Unreadable HTTP message: {}", ex.getMessage(), ex);
+        String message = messageService.get(MessageKey.INTERNAL_SERVER_ERROR, locale);
+        return ResponseUtils.internalServerError(message != null ? message : "Could not read request");
+    }
 
     @ExceptionHandler(Exception.class)
     ResponseEntity<ApiResponse<Void>> handleRuntimeException(Exception ex) {

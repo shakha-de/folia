@@ -6,6 +6,8 @@ import com.folia.server.common.messages.MessageService;
 import com.folia.server.auth.AuthenticationController;
 import com.folia.server.auth.AuthenticationService;
 import com.folia.server.auth.RegisterRequest;
+import com.folia.server.tree.TreeController;
+import com.folia.server.tree.TreeService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -26,7 +28,9 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
 import java.util.Locale;
+import java.util.Arrays;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
@@ -56,6 +60,23 @@ class ApiExceptionHandlerTest {
         when(messageService.get(eq(MessageKey.VALIDATION_FAILED), any(Locale.class)))
                 .thenReturn(VALIDATION_MESSAGE_DE);
 
+        // Mock enum error message
+        when(messageService.get(eq(MessageKey.INVALID_ENUM_VALUE), any(Locale.class), any(Object[].class)))
+                .thenAnswer(invocation -> {
+                    Object[] args;
+                    Object thirdArg = invocation.getArgument(2);
+                    if (thirdArg instanceof Object[]) {
+                        args = (Object[]) thirdArg;
+                    } else {
+                        Object[] allArgs = invocation.getArguments();
+                        args = Arrays.copyOfRange(allArgs, 2, allArgs.length);
+                    }
+                    String invalidValue = args.length > 0 ? String.valueOf(args[0]) : "";
+                    String fieldName = args.length > 1 ? String.valueOf(args[1]) : "";
+                    String accepted = args.length > 2 ? String.valueOf(args[2]) : "";
+                    return String.format("Invalid value '%s' for field '%s'. Accepted values are: %s", invalidValue, fieldName, accepted);
+                });
+
         // Mock field translations
         when(messageService.resolve(eq("field.password"), eq("password"), any(Locale.class)))
                 .thenReturn("Passwort");
@@ -63,6 +84,8 @@ class ApiExceptionHandlerTest {
                 .thenReturn("Benutzername");
         when(messageService.resolve(eq("field.email"), eq("email"), any(Locale.class)))
                 .thenReturn("E-Mail");
+        when(messageService.resolve(eq("field.soilMoistureLevel"), eq("soilMoistureLevel"), any(Locale.class)))
+                .thenReturn("soilMoistureLevel");
     }
 
     @Test
@@ -81,13 +104,34 @@ class ApiExceptionHandlerTest {
                 .andExpect(jsonPath("$.errors.Passwort").exists());
     }
 
+    @Test
+    void createTree_invalidEnum_returns400WithExactField() throws Exception {
+        String payload = "{\"species\":\"Quercus robur\"," +
+                "\"commonName\":\"Stieleiche\"," +
+                "\"lat\":51.4822," +
+                "\"lng\":11.9693," +
+                "\"soilMoistureLevel\":\"NOMODERATE\"," +
+                "\"healthStatus\":\"HEALTHY\"," +
+                "\"metadata\":{\"plantedDate\":\"2023-05-15\",\"caretakerId\":\"staff_042\"}}";
+
+        mockMvc.perform(post("/api/trees")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payload))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value(VALIDATION_MESSAGE_DE))
+                .andExpect(jsonPath("$.errors.soilMoistureLevel", containsString("NOMODERATE")))
+                .andExpect(jsonPath("$.errors.soilMoistureLevel", containsString("soilMoistureLevel")))
+                .andExpect(jsonPath("$.errors.soilMoistureLevel", containsString("MODERATE")));
+    }
+
     @SpringBootConfiguration
     @EnableAutoConfiguration(exclude = {
             DataSourceAutoConfiguration.class,
             HibernateJpaAutoConfiguration.class,
             FlywayAutoConfiguration.class
     })
-    @Import({ AuthenticationController.class, ApiExceptionHandler.class, MockConfig.class })
+    @Import({ AuthenticationController.class, TreeController.class, ApiExceptionHandler.class, MockConfig.class })
     static class TestApp {
     }
 
@@ -101,9 +145,14 @@ class ApiExceptionHandlerTest {
 
         @Bean
         @Primary
+        TreeService treeService() {
+            return Mockito.mock(TreeService.class);
+        }
+
+        @Bean
+        @Primary
         MessageService messageService() {
             return Mockito.mock(MessageService.class);
         }
     }
 }
-

@@ -1,0 +1,43 @@
+meta {
+  name: Create a tree with faulty moistureLevel
+  type: http
+  seq: 11
+}
+
+post {
+  url: {{host}}/api/trees
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{user1Token}}
+}
+
+body:json {
+  {
+    "species": "Quercus robur",
+    "commonName": "Stieleiche",
+    "lat": 51.4822,
+    "lng": 11.9693,
+    "soilMoistureLevel": "NOMODERATE",
+    "healthStatus": "HEALTHY",
+    "metadata": {
+      "plantedDate": "2023-05-15",
+      "caretakerId": "staff_042"
+    }
+  }
+}
+
+assert {
+  res.status: eq 400
+  res.body.success: eq false
+  res.body.errors: isNotEmpty
+  res.body.message: contains Validation failed.
+  res.body.errors.soilMoistureLevel: contains Invalid value 'NOMODERATE' for field 'soilMoistureLevel'
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
