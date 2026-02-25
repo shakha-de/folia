@@ -1,0 +1,45 @@
+meta {
+  name: Create a tree #2
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{host}}/api/trees
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{user1Token}}
+}
+
+body:json {
+  {
+    "species": "Acer platanoides",
+    "commonName": "Spitzahorn",
+    "lat": 51.4830,
+    "lng": 11.9710,
+    "soilMoistureLevel": "DRY",
+    "healthStatus": "STRESSED",
+    "metadata": {
+      "pestOutbreak": true,
+      "lastInspection": "2023-10-01"
+    }
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.success: eq true
+  res.body.message: contains Tree created successfully
+  res.body.data.species: eq Acer platanoides
+  res.body.data.lat: eq 51.483
+  res.body.data.healthStatus: eq STRESSED
+  res.body.errors: isNull
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

@@ -27,15 +27,19 @@ public class ApiExceptionHandler {
 
     private final MessageService messageService;
 
+    @ExceptionHandler(Exception.class)
+    ResponseEntity<ApiResponse<Void>> handleRuntimeException(Exception ex) {
+        log.error("Unexpected error: {}", ex.getMessage(), ex);
+        String message = messageService.get(MessageKey.INTERNAL_SERVER_ERROR, LocaleContextHolder.getLocale());
+        return ResponseUtils.internalServerError(message != null ? message : "An unexpected error occurred");
+    }
+
     @ExceptionHandler(DataIntegrityViolationException.class)
     ResponseEntity<ApiResponse<Void>> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
         MessageKey messageKey = getMessageKey(ex);
 
-        // ⚠️ SECURITY: Log detailed error server-side (only visible to developers/ops)
-        // Never expose database structure, constraints, or SQL details to clients
         log.error("Data integrity violation: {}", ex.getMostSpecificCause().getMessage());
 
-        // Return generic, user-friendly message using i18n
         String message = messageService.get(messageKey, LocaleContextHolder.getLocale());
         return ResponseUtils.conflict(message);
     }

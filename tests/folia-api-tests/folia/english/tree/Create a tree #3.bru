@@ -1,0 +1,45 @@
+meta {
+  name: Create a tree #3
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{host}}/api/trees
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{user1Token}}
+}
+
+body:json {
+  {
+    "species": "Tilia cordata",
+    "commonName": "Winterlinde",
+    "lat": 51.4790,
+    "lng": 11.9650,
+    "soilMoistureLevel": "WET",
+    "healthStatus": "DEAD",
+    "metadata": {
+      "cutDownReason": "Disease",
+      "scheduledForRemoval": "2023-11-20"
+    }
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.success: eq true
+  res.body.message: contains Tree created successfully
+  res.body.data.species: eq Tilia cordata
+  res.body.data.lat: eq 51.479
+  res.body.data.healthStatus: eq DEAD
+  res.body.errors: isNull
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

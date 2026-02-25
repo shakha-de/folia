@@ -1,0 +1,45 @@
+meta {
+  name: Create a tree #5
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{host}}/api/trees
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{user1Token}}
+}
+
+body:json {
+  {
+    "species": "Picea abies",
+    "commonName": "Gemeine Fichte",
+    "lat": -89.9999,
+    "lng": 180.0,
+    "soilMoistureLevel": "DRY",
+    "healthStatus": "DYING",
+    "metadata": {
+      "temperature": -5,
+      "fertilizerUsed": false
+    }
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.success: eq true
+  res.body.message: contains Tree created successfully
+  res.body.data.species: eq Picea abies
+  res.body.data.lat: eq -89.9999
+  res.body.data.healthStatus: eq DYING
+  res.body.errors: isNull
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

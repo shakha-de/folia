@@ -11,6 +11,7 @@ public enum MessageKey {
     COMMON_FAILURE("common.failure"),
     COMMON_UNEXPECTED_ERROR("common.unexpected.error"),
     COMMON_VALIDATION_FAILED("common.validation.failed"),
+    INTERNAL_SERVER_ERROR("internal.server.error"),
 
     // ================= USER: SUCCESS ==========
     USER_CREATED("user.created"),
