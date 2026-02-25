@@ -1,0 +1,31 @@
+meta {
+  name: Get new Access Token & Refresh Token
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{host}}/api/auth/refresh-token
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "refreshToken":"{{user1RefToken}}"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.success: eq true
+  res.body.message: contains Token refreshed successfully
+  res.body.data.refreshToken: neq {{user1RefToken}}
+  res.body.data.user.uuid: eq {{user1Obj.uuid}}
+  res.body.errors: isNull
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

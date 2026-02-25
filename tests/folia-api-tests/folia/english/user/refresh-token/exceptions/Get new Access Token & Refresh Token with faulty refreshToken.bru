@@ -1,0 +1,29 @@
+meta {
+  name: Get new Access Token & Refresh Token with faulty refreshToken
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{host}}/api/auth/refresh-token
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "refreshToken":"anything but not refresh Token"
+  }
+}
+
+assert {
+  res.status: eq 404
+  res.body.success: eq false
+  res.body.message: contains Refresh token not found
+  res.body.data: isNull
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

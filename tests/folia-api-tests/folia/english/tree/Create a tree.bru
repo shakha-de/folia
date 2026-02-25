@@ -1,0 +1,35 @@
+meta {
+  name: Create a tree
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{host}}/api/tree
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{user1Token}}
+}
+
+body:json {
+  {
+    "species": "Quercus robur",
+    "commonName": "Stieleiche",
+    "lat": 51.4822,
+    "lng": 11.9693,
+    "soilMoistureLevel": "MODERATE",
+    "healthStatus": "HEALTHY",
+    "metadata": {
+      "plantedDate": "2023-05-15",
+      "caretakerId": "staff_042"
+    }
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

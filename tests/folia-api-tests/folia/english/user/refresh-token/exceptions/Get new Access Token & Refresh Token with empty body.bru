@@ -1,0 +1,30 @@
+meta {
+  name: Get new Access Token & Refresh Token with empty body
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{host}}/api/auth/refresh-token
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "refreshToken":""
+  }
+}
+
+assert {
+  res.status: eq 400
+  res.body.success: eq false
+  res.body.message: contains Validation failed.
+  res.body.errors: isNotEmpty
+  res.body.errors.refreshToken: contains Invalid refresh token
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

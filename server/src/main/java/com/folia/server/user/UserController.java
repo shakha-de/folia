@@ -6,6 +6,7 @@ import com.folia.server.common.messages.MessageService;
 import com.folia.server.common.util.ResponseUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,6 +24,7 @@ public class UserController {
     private final MessageService messageService;
 
     @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse<List<UserDto>>> all(
         Locale locale
     ) {
@@ -38,6 +40,7 @@ public class UserController {
     }
 
     @GetMapping("/{uuid}")
+    @PreAuthorize("hasRole('ADMIN') or authentication.name == @userService.getUserByUuid(#uuid).username")
     public ResponseEntity<ApiResponse<UserDto>> byUuid(
         @PathVariable UUID uuid,
         Locale locale
@@ -49,6 +52,7 @@ public class UserController {
     }
 
     @DeleteMapping("/{uuid}")
+    @PreAuthorize("hasRole('ADMIN') or authentication.name == @userService.getUserByUuid(#uuid).username")
     public ResponseEntity<ApiResponse<Void>> delete(
         @PathVariable UUID uuid,
         Locale locale

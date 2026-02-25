@@ -34,6 +34,8 @@ script:post-response {
   
   
   bru.setVar("user1Obj",user1Obj);
+  bru.setVar("user1Token", res.getBody().data.token);
+  bru.setVar("user1RefToken", res.getBody().data.refreshToken);
 }
 
 settings {
