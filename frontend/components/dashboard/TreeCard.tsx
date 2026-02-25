@@ -9,7 +9,7 @@ interface TreeCardProps {
 }
 
 export default function TreeCard({ tree }: TreeCardProps) {
-    const isThirsty = tree.healthStatus === 'NEEDS_CARE' || tree.soilMoistureLevel === 'DRY';
+    const isThirsty = tree.healthStatus === 'STRESSED' || tree.healthStatus === 'DYING' || tree.soilMoistureLevel === 'DRY';
     const statusText = isThirsty ? 'Thirsty' : 'Healthy';
     const statusIcon = isThirsty ? 'warning' : 'check_circle';
     const borderColor = isThirsty ? 'border-l-destructive' : 'border-l-primary';
@@ -33,8 +33,8 @@ export default function TreeCard({ tree }: TreeCardProps) {
                             <h3 className="text-slate-900 dark:text-white text-lg font-bold">{tree.commonName || tree.species}</h3>
                             <p className="text-slate-600 dark:text-slate-300 text-sm flex items-center gap-1">
                                 <span className="material-symbols-outlined text-[16px]">location_on</span>
-                                Lat: {typeof tree.location === 'object' && 'lat' in tree.location ? tree.location.lat.toFixed(4) : 'N/A'},
-                                Lng: {typeof tree.location === 'object' && 'lng' in tree.location ? tree.location.lng.toFixed(4) : 'N/A'}
+                                Lat: {tree.lat?.toFixed(4) ?? 'N/A'},
+                                Lng: {tree.lng?.toFixed(4) ?? 'N/A'}
                             </p>
                         </div>
                         <Badge variant={badgeVariant} className="gap-1">
