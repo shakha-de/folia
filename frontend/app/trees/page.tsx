@@ -202,7 +202,7 @@ export default function TreesPage(): React.ReactElement {
         <div className="bg-background-light dark:bg-background-dark h-screen flex overflow-hidden font-display">
 
             {/* ── Collapsible Sidebar ─────────────────────────────────────────── */}
-            <div className={`relative shrink-0 transition-all duration-300 ease-in-out ${sidebarOpen ? "w-full md:w-100 lg:w-110" : "w-0"}`}>
+            <div className={`relative z-20 shrink-0 transition-all duration-300 ease-in-out ${sidebarOpen ? "w-full md:w-100 lg:w-110" : "w-0"}`}>
                 <aside className={`absolute inset-0 flex flex-col bg-white dark:bg-[#111812] border-r border-gray-200 dark:border-[#2a3f2d] z-20 shadow-xl overflow-hidden transition-opacity duration-300 ${sidebarOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}>
                     {/* Header */}
                     <div className="p-5 pb-2 border-b border-gray-100 dark:border-[#1e2f21]">
@@ -285,7 +285,7 @@ export default function TreesPage(): React.ReactElement {
             </div>
 
             {/* ── Map ─────────────────────────────────────────────────────────── */}
-            <main className="flex-1 min-h-0 relative overflow-hidden">
+            <main className="flex-1 min-h-0 relative z-0 overflow-hidden">
                 <TreesMapView
                     trees={filtered}
                     center={location ?? DEFAULT_CENTER}
@@ -351,9 +351,9 @@ export default function TreesPage(): React.ReactElement {
                     )}
                 </div>
 
-                {/* Locating overlay */}
+                {/* Locating overlay — top-16 clears the floating nav pill */}
                 {locating && (
-                    <div className="absolute top-4 left-1/2 -translate-x-1/2 z-1000 bg-white/80 dark:bg-black/80 px-4 py-2 rounded-full backdrop-blur-sm border border-white/20 shadow-lg flex items-center gap-2 pointer-events-none">
+                    <div className="absolute top-16 left-1/2 -translate-x-1/2 z-1000 bg-white/80 dark:bg-black/80 px-4 py-2 rounded-full backdrop-blur-sm border border-white/20 shadow-lg flex items-center gap-2 pointer-events-none">
                         <div className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                         <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Detecting location…</span>
                     </div>
@@ -361,7 +361,7 @@ export default function TreesPage(): React.ReactElement {
 
                 {/* Location unavailable badge */}
                 {locError && !locating && (
-                    <div className="absolute top-4 left-1/2 -translate-x-1/2 z-1000 bg-white/80 dark:bg-black/80 px-4 py-2 rounded-full backdrop-blur-sm border border-amber-400/40 shadow-lg flex items-center gap-2 pointer-events-none">
+                    <div className="absolute top-16 left-1/2 -translate-x-1/2 z-1000 bg-white/80 dark:bg-black/80 px-4 py-2 rounded-full backdrop-blur-sm border border-amber-400/40 shadow-lg flex items-center gap-2 pointer-events-none">
                         <span className="material-symbols-outlined text-amber-400 text-[16px]">location_off</span>
                         <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Location unavailable — showing Berlin</span>
                     </div>

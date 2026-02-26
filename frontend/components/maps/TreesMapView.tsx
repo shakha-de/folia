@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useSyncExternalStore } from "react";
+import { useEffect } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import { TreeDto } from "@/lib/api";
@@ -93,13 +93,6 @@ interface TreesMapViewProps {
 }
 
 export default function TreesMapView({ trees, center, onViewChange }: TreesMapViewProps) {
-    // useSyncExternalStore is the React-recommended way to detect client-side mounting
-    // without triggering the react-hooks/set-state-in-effect lint rule.
-    // Server snapshot → false (placeholder), client snapshot → true (real map).
-    const mounted = useSyncExternalStore(() => () => {}, () => true, () => false);
-
-    if (!mounted) return <div style={{ width: "100%", height: "100%", minHeight: "400px" }} />;
-
     return (
         <MapContainer
             center={[center.lat, center.lng]}
