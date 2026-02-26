@@ -21,7 +21,7 @@ import java.util.UUID;
 public class UserController {
 
     private final UserService userService;
-    private final MessageService messageService;
+    private final MessageService ms;
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
@@ -35,7 +35,7 @@ public class UserController {
 
         return ResponseUtils.ok(
             userDtos,
-            messageService.get(MessageKey.USERS_RETRIEVED, locale)
+            ms.get(MessageKey.USERS_RETRIEVED, locale)
         );
     }
 
@@ -48,7 +48,7 @@ public class UserController {
         User user = userService.getUserByUuid(uuid);
         return ResponseUtils.ok(
             UserDto.from(user),
-            messageService.get(MessageKey.USER_RETRIEVED, locale));
+            ms.get(MessageKey.USER_RETRIEVED, locale));
     }
 
     @DeleteMapping("/{uuid}")
@@ -60,7 +60,7 @@ public class UserController {
         userService.deleteUserByUuid(uuid);
         return ResponseUtils.ok(
             null,
-            messageService.get(MessageKey.USER_DELETED, locale)
+            ms.get(MessageKey.USER_DELETED, locale)
         );
     }
 }

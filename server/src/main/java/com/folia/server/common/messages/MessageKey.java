@@ -78,9 +78,13 @@ public enum MessageKey {
     TREES_RETRIEVED_SUCCESSFULLY("trees.retrieved.successfully"),
     TREE_RETRIEVED_SUCCESSFULLY("tree.retrieved.successfully"),
     TREE_CREATED_SUCCESSFULLY("tree.created.successfully"),
+    TREE_WATERED_SUCCESSFULLY("tree.watered.successfully"),
     TREE_UPDATED_SUCCESSFULLY("tree.updated.successfully"),
     TREE_DELETED_SUCCESSFULLY("tree.deleted.successfully"),
-    TREES_NEARBY_RETRIEVED_SUCCESSFULLY("trees.nearby.retrieved.successfully");
+    TREE_STATISTICS_RETRIEVED_SUCCESSFULLY("tree.statistics.retrieved.successfully"),
+    TREES_NEARBY_RETRIEVED_SUCCESSFULLY("trees.nearby.retrieved.successfully"),
+    TREES_NEEDING_WATER_RETRIEVED_SUCCESSFULLY("trees.needing.water.retrieved.successfully"),
+    TREES_SEARCHED_SUCCESSFULLY("trees.searched.successfully");
 
     private final String value;
 }

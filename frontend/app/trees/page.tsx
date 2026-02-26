@@ -44,7 +44,7 @@ const filterLabels: { key: HealthFilter; label: string }[] = [
     { key: "HEALTHY", label: "Healthy" },
 ];
 
-function TreeCard({ tree }: { tree: TreeDto }) {
+function TreeCard({ tree }: Readonly<{ tree: TreeDto }>) {
     const badge = healthBadge[tree.healthStatus] ?? { label: tree.healthStatus, color: "text-slate-400", bg: "bg-slate-400/10" };
     const lastWatered = tree.lastWateredAt
         ? `Last watered: ${new Date(tree.lastWateredAt).toLocaleDateString()}`
@@ -72,7 +72,7 @@ function TreeCard({ tree }: { tree: TreeDto }) {
     );
 }
 
-function StatsPill({ stats }: { stats: TreeStats }) {
+function StatsPill({ stats }: Readonly<{ stats: TreeStats }>) {
     return (
         <div className="flex gap-3 text-xs text-slate-500 dark:text-slate-400 px-5 pb-3">
             <span><span className="font-bold text-slate-900 dark:text-white">{stats.totalTrees}</span> trees</span>
@@ -81,6 +81,24 @@ function StatsPill({ stats }: { stats: TreeStats }) {
     );
 }
 
+function LocationLabel({ locating, locError, location }: Readonly<{ locating: boolean; locError: boolean; location: GeoLocation | null }>) {
+    if (locating) {
+        return <span className="text-xs text-slate-400">Detecting location…</span>;
+    }
+    if (locError || !location) {
+        return <span className="text-xs text-red-400">Location unavailable</span>;
+    }
+    const place = location.city
+        ? [location.city, location.country].filter(Boolean).join(', ')
+        : `${location.lat.toFixed(3)}, ${location.lng.toFixed(3)}`;
+    const accuracy = location.source === 'gps' ? 'GPS' : 'approx.';
+    return (
+        <span className="text-xs text-slate-500 dark:text-slate-400">
+            {place}
+            <span className="ml-1 text-slate-400 dark:text-slate-500">({accuracy})</span>
+        </span>
+    );
+}
 export default function TreesPage() {
     const { user, loading } = useAuth();
     const router = useRouter();
@@ -189,19 +207,7 @@ export default function TreesPage() {
                         {/* Location indicator */}
                         <div className="flex items-center gap-2 mb-3 px-1">
                             <span className="material-symbols-outlined text-[16px] text-slate-400">location_on</span>
-                            {locating ? (
-                                <span className="text-xs text-slate-400">Detecting location…</span>
-                            ) : locError || !location ? (
-                                <span className="text-xs text-red-400">Location unavailable</span>
-                            ) : (
-                                <span className="text-xs text-slate-500 dark:text-slate-400">
-                                    {location.city ? `${location.city}${location.country ? `, ${location.country}` : ''}` : `${location.lat.toFixed(3)}, ${location.lng.toFixed(3)}`}
-                                    {' '}
-                                    <span className="text-slate-400 dark:text-slate-500">
-                                        ({location.source === 'gps' ? 'GPS' : 'approx.'})
-                                    </span>
-                                </span>
-                            )}
+                            <LocationLabel locating={locating} locError={locError} location={location} />
                         </div>
                         <div className="relative mb-3">
                             <span className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
@@ -282,8 +288,8 @@ export default function TreesPage() {
                         )}
 
                         {/* Location unavailable badge — shown after failed detection */}
-                        {!locating && locError && (
-                            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000] bg-white/80 dark:bg-black/80 px-4 py-2 rounded-full backdrop-blur-sm border border-amber-400/40 shadow-lg flex items-center gap-2 pointer-events-none">
+                        {locError && !locating && (
+                            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-1000 bg-white/80 dark:bg-black/80 px-4 py-2 rounded-full backdrop-blur-sm border border-amber-400/40 shadow-lg flex items-center gap-2 pointer-events-none">
                                 <span className="material-symbols-outlined text-amber-400 text-[16px]">location_off</span>
                                 <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Location unavailable — showing Berlin</span>
                             </div>
@@ -299,7 +305,7 @@ export default function TreesPage() {
                     </div>
 
                     {/* Legend */}
-                    <div className="absolute bottom-6 right-6 z-1000 bg-white/90 dark:bg-[#1c271d]/90 backdrop-blur-sm p-4 rounded-lg shadow-lg border border-gray-200 dark:border-[#2a3f2d]">
+                    <div className="absolute bottom-6 right-6 z-[1000] bg-white/90 dark:bg-[#1c271d]/90 backdrop-blur-sm p-4 rounded-lg shadow-lg border border-gray-200 dark:border-[#2a3f2d]">
                         <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3">
                             Health Status
                         </h4>

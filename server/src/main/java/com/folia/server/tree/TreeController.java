@@ -94,36 +94,42 @@ public class TreeController {
     @PostMapping("/{publicId}/water")
     public ResponseEntity<ApiResponse<TreeDto>> water(
             @PathVariable UUID publicId,
-            @RequestBody @Valid WaterTreeRequest request) {
+            @RequestBody @Valid WaterTreeRequest request,
+            Locale locale) {
         Tree tree = treeService.waterTree(publicId, request);
-        return ResponseUtils.ok(TreeDto.from(tree), "Tree watered successfully");
+        return ResponseUtils.ok(TreeDto.from(tree), ms.get(MessageKey.TREE_WATERED_SUCCESSFULLY, locale));
     }
 
     @GetMapping("/needs-watering")
     public ResponseEntity<ApiResponse<List<TreeDto>>> needsWatering(
             @RequestParam @NotNull @Min(-90) @Max(90) Double lat,
             @RequestParam @NotNull @Min(-180) @Max(180) Double lng,
-            @RequestParam(defaultValue = "1000") @Min(1) @Max(50000) Integer radiusMeters) {
+            @RequestParam(defaultValue = "1000") @Min(1) @Max(50000) Integer radiusMeters,
+            Locale locale) {
         List<Tree> trees = treeService.getTreesNeedingWater(lat, lng, radiusMeters);
         return ResponseUtils.ok(
                 trees.stream().map(TreeDto::from).toList(),
-                "Trees needing water retrieved successfully");
+                ms.get(MessageKey.TREES_NEEDING_WATER_RETRIEVED_SUCCESSFULLY, locale));
     }
 
     @GetMapping("/search")
-    public ResponseEntity<ApiResponse<List<TreeDto>>> search(TreeSearchCriteria criteria) {
+    public ResponseEntity<ApiResponse<List<TreeDto>>> search(
+        TreeSearchCriteria criteria,
+        Locale locale
+    ) {
         List<Tree> trees = treeService.searchTrees(criteria);
         return ResponseUtils.ok(
                 trees.stream().map(TreeDto::from).toList(),
-                "Trees searched successfully");
+                ms.get(MessageKey.TREES_SEARCHED_SUCCESSFULLY, locale));
     }
 
     @GetMapping("/stats")
     public ResponseEntity<ApiResponse<TreeStats>> statistics(
             @RequestParam @NotNull @Min(-90) @Max(90) Double lat,
             @RequestParam @NotNull @Min(-180) @Max(180) Double lng,
-            @RequestParam(defaultValue = "5000") @Min(1) @Max(100000) Integer radiusMeters) {
+            @RequestParam(defaultValue = "5000") @Min(1) @Max(100000) Integer radiusMeters,
+            Locale locale) {
         TreeStats stats = treeService.getTreeStats(lat, lng, radiusMeters);
-        return ResponseUtils.ok(stats, "Tree statistics retrieved successfully");
+        return ResponseUtils.ok(stats, ms.get(MessageKey.TREE_STATISTICS_RETRIEVED_SUCCESSFULLY, locale));
     }
 }
