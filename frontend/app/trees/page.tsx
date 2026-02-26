@@ -13,11 +13,17 @@ import { Button } from "@/components/ui/button";
 const TreesMapView = dynamic(() => import("@/components/maps/TreesMapView"), {
     ssr: false,
     loading: () => (
-        <div className="w-full h-full flex items-center justify-center bg-[#0d1a0f]">
-            <p className="text-slate-400 text-sm">Loading map…</p>
+        <div className="w-full h-full flex items-center justify-center bg-[#0d1a0f] animate-pulse">
+            <div className="flex flex-col items-center gap-3">
+                <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                <p className="text-slate-500 text-xs uppercase tracking-widest">Loading map…</p>
+            </div>
         </div>
     ),
 });
+
+// Fallback map center used before/if user location is detected
+const DEFAULT_CENTER = { lat: 52.52, lng: 13.405 }; // Berlin
 
 type HealthFilter = "ALL" | "HEALTHY" | "STRESSED" | "DYING" | "NEEDS_CARE";
 
@@ -100,14 +106,13 @@ export default function TreesPage() {
         if (!user) return;
         getUserLocation().then((loc) => {
             setLocating(false);
-            if (!loc) { setLocError(true); return; }
-            setLocation(loc);
-            // Initial fetch handled by dynamic map view if needed,
-            // but we do one initial fetch here to populate the list immediately
-            lastViewRef.current = { lat: loc.lat, lng: loc.lng, radius: 20000 };
+            const center = loc ?? DEFAULT_CENTER;
+            if (!loc) setLocError(true);
+            else setLocation(loc);
+            lastViewRef.current = { lat: center.lat, lng: center.lng, radius: 20000 };
             return Promise.all([
-                fetchNearbyTrees(loc.lat, loc.lng, 20000),
-                fetchTreeStats(loc.lat, loc.lng, 20000),
+                fetchNearbyTrees(center.lat, center.lng, 20000),
+                fetchTreeStats(center.lat, center.lng, 20000),
             ]);
         }).then((result) => {
             if (!result) return;
@@ -259,28 +264,39 @@ export default function TreesPage() {
                     </div>
                 </aside>
 
-                {/* Map */}
+                {/* Map — always visible; overlays communicate location state */}
                 <main className="flex-1 min-h-0 relative overflow-hidden" style={{ height: "100%" }}>
-                    {location ? (
-                        <div style={{ width: "100%", height: "100%", position: "relative" }}>
-                            <TreesMapView
-                                trees={filtered}
-                                center={location}
-                                onViewChange={handleMapViewChange}
-                            />
-                            {fetching && (
-                                <div className="absolute top-4 right-4 z-1000 bg-white/80 dark:bg-black/80 px-3 py-1.5 rounded-full backdrop-blur-sm border border-white/20 shadow-lg flex items-center gap-2">
-                                    <div className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                                    <span className="text-[10px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Syncing…</span>
-                                </div>
-                            )}
-                        </div>
-                    ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center bg-[#0d1a0f] gap-3">
-                            <span className="material-symbols-outlined text-slate-500 text-4xl">location_off</span>
-                            <p className="text-slate-400 text-sm">{locating ? 'Detecting your location…' : 'Could not determine your location.'}</p>
-                        </div>
-                    )}
+                    <div style={{ width: "100%", height: "100%", position: "relative" }}>
+                        <TreesMapView
+                            trees={filtered}
+                            center={location ?? DEFAULT_CENTER}
+                            onViewChange={handleMapViewChange}
+                        />
+
+                        {/* Locating overlay — shown while GPS/IP lookup is in progress */}
+                        {locating && (
+                            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000] bg-white/80 dark:bg-black/80 px-4 py-2 rounded-full backdrop-blur-sm border border-white/20 shadow-lg flex items-center gap-2 pointer-events-none">
+                                <div className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                                <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Detecting location…</span>
+                            </div>
+                        )}
+
+                        {/* Location unavailable badge — shown after failed detection */}
+                        {!locating && locError && (
+                            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000] bg-white/80 dark:bg-black/80 px-4 py-2 rounded-full backdrop-blur-sm border border-amber-400/40 shadow-lg flex items-center gap-2 pointer-events-none">
+                                <span className="material-symbols-outlined text-amber-400 text-[16px]">location_off</span>
+                                <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Location unavailable — showing Berlin</span>
+                            </div>
+                        )}
+
+                        {/* Syncing indicator */}
+                        {fetching && (
+                            <div className="absolute top-4 right-4 z-[1000] bg-white/80 dark:bg-black/80 px-3 py-1.5 rounded-full backdrop-blur-sm border border-white/20 shadow-lg flex items-center gap-2">
+                                <div className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                                <span className="text-[10px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Syncing…</span>
+                            </div>
+                        )}
+                    </div>
 
                     {/* Legend */}
                     <div className="absolute bottom-6 right-6 z-1000 bg-white/90 dark:bg-[#1c271d]/90 backdrop-blur-sm p-4 rounded-lg shadow-lg border border-gray-200 dark:border-[#2a3f2d]">

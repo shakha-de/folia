@@ -72,7 +72,15 @@ public enum MessageKey {
 
     // ============== REPUTATION / ROLE =========
     USER_ROLE_INVALID("user.role.invalid"),
-    USER_REPUTATION_TOO_LOW("user.reputation.too.low");
+    USER_REPUTATION_TOO_LOW("user.reputation.too.low"),
+
+    // ============== TREE ======================
+    TREES_RETRIEVED_SUCCESSFULLY("trees.retrieved.successfully"),
+    TREE_RETRIEVED_SUCCESSFULLY("tree.retrieved.successfully"),
+    TREE_CREATED_SUCCESSFULLY("tree.created.successfully"),
+    TREE_UPDATED_SUCCESSFULLY("tree.updated.successfully"),
+    TREE_DELETED_SUCCESSFULLY("tree.deleted.successfully"),
+    TREES_NEARBY_RETRIEVED_SUCCESSFULLY("trees.nearby.retrieved.successfully");
 
     private final String value;
 }

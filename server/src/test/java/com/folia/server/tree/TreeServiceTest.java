@@ -2,6 +2,8 @@ package com.folia.server.tree;
 
 import com.folia.server.common.messages.MessageKey;
 import com.folia.server.exceptions.TreeNotFoundException;
+import com.folia.server.user.User;
+import com.folia.server.user.UserRole;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -47,6 +49,16 @@ class TreeServiceTest {
 
     @Test
     void createTree_populatesEntityAndSaves() {
+        UUID uuid = UUID.randomUUID();
+        User user = User.builder()
+            .uuid(uuid)
+            .username("alice")
+            .email("alice@example.com")
+            .passwordHash("x")
+            .role(UserRole.CITIZEN)
+            .isEnabled(true)
+            .build();
+
         CreateTreeRequest request = new CreateTreeRequest(
                 "Quercus robur",
                 "English oak",
@@ -59,7 +71,7 @@ class TreeServiceTest {
         when(treeRepository.save(any(Tree.class))).thenAnswer(invocation -> invocation.getArgument(0));
         LocalDateTime before = LocalDateTime.now();
 
-        Tree created = treeService.createTree(request);
+        Tree created = treeService.createTree(request, user);
 
         assertThat(created.getSpecies()).isEqualTo("Quercus robur");
         assertThat(created.getCommonName()).isEqualTo("English oak");

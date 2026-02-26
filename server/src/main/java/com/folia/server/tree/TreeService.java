@@ -2,6 +2,7 @@ package com.folia.server.tree;
 
 import com.folia.server.common.messages.MessageKey;
 import com.folia.server.exceptions.TreeNotFoundException;
+import com.folia.server.user.User;
 import lombok.RequiredArgsConstructor;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.GeometryFactory;
@@ -26,7 +27,7 @@ public class TreeService {
         return treeRepository.findNearby(lat, lng, radiusMeters);
     }
 
-    public Tree createTree(CreateTreeRequest request) {
+    public Tree createTree(CreateTreeRequest request, User registerer) {
         Tree tree = Tree.builder()
                 .species(request.species())
                 .commonName(request.commonName())
@@ -34,6 +35,7 @@ public class TreeService {
                 .soilMoistureLevel(request.soilMoistureLevel())
                 .healthStatus(request.healthStatus())
                 .metadata(request.metadata())
+                .registeredBy(registerer)
                 .build();
 
         tree.setNextWateringDue(calculateNextWateringDue(request.soilMoistureLevel(), LocalDateTime.now()));
@@ -124,4 +126,7 @@ public class TreeService {
         return from.plusDays(days);
     }
 
+    public List<Tree> getMyTrees(User user) {
+        return treeRepository.findByRegisteredBy(user);
+    }
 }

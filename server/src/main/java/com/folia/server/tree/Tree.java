@@ -1,6 +1,7 @@
 package com.folia.server.tree;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.folia.server.user.User;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -72,6 +73,14 @@ public class Tree {
     @Builder.Default
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt = LocalDateTime.now();
+
+    @ManyToOne
+    @JoinColumn(name = "registered_by_id")
+    private User registeredBy;
+
+    @ManyToOne
+    @JoinColumn(name = "adopted_by_id")
+    private User adoptedBy;
 
     @PrePersist
     void prePersist() {

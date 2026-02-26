@@ -1,18 +1,19 @@
 "use client";
 
-import { useEffect, useCallback, useState, useMemo } from "react";
+import { useEffect, useCallback, useMemo, useState } from "react";
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from "react-leaflet";
 import L from "leaflet";
 
-const fixLeafletIcons = () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    delete (L.Icon.Default.prototype as any)._getIconUrl;
-    L.Icon.Default.mergeOptions({
-        iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-        iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-        shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-    });
-};
+// Fix default icon path issue with webpack.
+// Safe to call at module level: this module is only ever loaded on the client
+// (dynamic import with ssr:false), so `window` and Leaflet internals are available.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+    iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+    iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+    shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+});
 
 function ClickHandler({ onPick }: { onPick: (lat: number, lng: number) => void }) {
     useMapEvents({
@@ -26,7 +27,8 @@ function ClickHandler({ onPick }: { onPick: (lat: number, lng: number) => void }
 function InvalidateSize() {
     const map = useMap();
     useEffect(() => {
-        const id = setTimeout(() => map.invalidateSize(), 200);
+        // Force Leaflet to recalculate container dimensions after the first paint
+        const id = setTimeout(() => map.invalidateSize(), 50);
         return () => clearTimeout(id);
     }, [map]);
     return null;
@@ -40,12 +42,7 @@ interface PickLocationMapProps {
 
 export default function PickLocationMap({ lat, lng, onLocationChange }: PickLocationMapProps) {
     const [mounted, setMounted] = useState(false);
-
-    useEffect(() => {
-        fixLeafletIcons();
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setMounted(true);
-    }, []);
+    useEffect(() => { setMounted(true); }, []);
 
     const pinIcon = useMemo(() => L.divIcon({
         className: "",
@@ -64,7 +61,7 @@ export default function PickLocationMap({ lat, lng, onLocationChange }: PickLoca
         [onLocationChange]
     );
 
-    if (!mounted) return null;
+    if (!mounted) return <div style={{ position: "absolute", inset: 0, minHeight: "400px" }} />;
 
     return (
         <MapContainer

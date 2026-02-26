@@ -1,5 +1,6 @@
 package com.folia.server.tree;
 
+import com.folia.server.user.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -58,4 +59,6 @@ public interface TreeRepository extends JpaRepository<Tree, Long> {
             @Param("species") String species,
             @Param("healthStatus") String healthStatus,
             @Param("soilMoistureLevel") String soilMoistureLevel);
+
+    List<Tree> findByRegisteredBy(User registeredBy);
 }

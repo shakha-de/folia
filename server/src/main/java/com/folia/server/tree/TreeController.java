@@ -1,17 +1,22 @@
 package com.folia.server.tree;
 
 import com.folia.server.common.ApiResponse;
+import com.folia.server.common.messages.MessageKey;
+import com.folia.server.common.messages.MessageService;
 import com.folia.server.common.util.ResponseUtils;
+import com.folia.server.user.User;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 @RestController
@@ -21,46 +26,69 @@ import java.util.UUID;
 public class TreeController {
 
     private final TreeService treeService;
+    private final MessageService ms;
 
     @GetMapping("/nearby")
     public ResponseEntity<ApiResponse<List<TreeDto>>> nearby(
             @RequestParam @NotNull @Min(-90) @Max(90) Double lat,
             @RequestParam @NotNull @Min(-180) @Max(180) Double lng,
-            @RequestParam(defaultValue = "250") @Min(1) @Max(30000) Integer radiusMeters) {
+            @RequestParam(defaultValue = "250") @Min(1) @Max(30000) Integer radiusMeters,
+            Locale locale) {
         List<Tree> trees = treeService.findTreesNearby(lat, lng, radiusMeters);
         return ResponseUtils.ok(
                 trees.stream()
                         .map(TreeDto::from)
                         .toList(),
-                "Nearby trees retrieved successfully");
+                ms.get(MessageKey.TREES_NEARBY_RETRIEVED_SUCCESSFULLY, locale));
+    }
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<List<TreeDto>>> myTrees(
+        Locale locale,
+        @AuthenticationPrincipal User user
+    ) {
+        List<Tree> trees = treeService.getMyTrees(user);
+        return ResponseUtils.ok(
+            trees.stream().map(TreeDto::from).toList(),
+            ms.get(MessageKey.TREES_RETRIEVED_SUCCESSFULLY, locale)
+        );
     }
 
     @PostMapping
-    public ResponseEntity<ApiResponse<TreeDto>> create(@RequestBody @Valid CreateTreeRequest request) {
-        Tree tree = treeService.createTree(request);
+    public ResponseEntity<ApiResponse<TreeDto>> create(
+        @RequestBody @Valid CreateTreeRequest request,
+        @AuthenticationPrincipal User user,
+        Locale locale
+
+    ) {
+        Tree tree = treeService.createTree(request, user);
         return ResponseUtils.created(
                 TreeDto.from(tree),
-                "Tree created successfully");
+                ms.get(MessageKey.TREE_CREATED_SUCCESSFULLY, locale));
     }
 
     @GetMapping("/{publicId}")
-    public ResponseEntity<ApiResponse<TreeDto>> findById(@PathVariable UUID publicId) {
+    public ResponseEntity<ApiResponse<TreeDto>> findById(@PathVariable UUID publicId, Locale locale) {
         Tree tree = treeService.getTreeByPublicId(publicId);
-        return ResponseUtils.ok(TreeDto.from(tree), "Tree retrieved successfully");
+        return ResponseUtils.ok(TreeDto.from(tree), ms.get(MessageKey.TREE_RETRIEVED_SUCCESSFULLY, locale));
     }
 
     @PutMapping("/{publicId}")
     public ResponseEntity<ApiResponse<TreeDto>> update(
             @PathVariable UUID publicId,
-            @RequestBody @Valid UpdateTreeRequest request) {
+            @RequestBody @Valid UpdateTreeRequest request,
+            Locale locale) {
         Tree tree = treeService.updateTree(publicId, request);
-        return ResponseUtils.ok(TreeDto.from(tree), "Tree updated successfully");
+        return ResponseUtils.ok(TreeDto.from(tree), ms.get(MessageKey.TREE_UPDATED_SUCCESSFULLY, locale));
     }
 
     @DeleteMapping("/{publicId}")
-    public ResponseEntity<ApiResponse<Void>> delete(@PathVariable UUID publicId) {
+    public ResponseEntity<ApiResponse<Void>> delete(
+        @PathVariable UUID publicId,
+        Locale locale
+    ) {
         treeService.deleteTree(publicId);
-        return ResponseUtils.noContent("Tree deleted successfully");
+        return ResponseUtils.ok(null, ms.get(MessageKey.TREE_DELETED_SUCCESSFULLY, locale));
     }
 
     @PostMapping("/{publicId}/water")

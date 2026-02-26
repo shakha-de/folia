@@ -5,16 +5,16 @@ import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from "re
 import L from "leaflet";
 import { TreeDto } from "@/lib/api";
 
-// Fix default icon path issue with webpack
-const fixLeafletIcons = () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    delete (L.Icon.Default.prototype as any)._getIconUrl;
-    L.Icon.Default.mergeOptions({
-        iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-        iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-        shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-    });
-};
+// Fix default icon path issue with webpack.
+// Safe to call at module level: this module is only ever loaded on the client
+// (dynamic import with ssr:false), so `window` and Leaflet internals are available.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+    iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+    iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+    shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+});
 
 const healthColor: Record<string, string> = {
     HEALTHY: "#13ec37",
@@ -62,8 +62,8 @@ function RecenterMap({ lat, lng }: { lat: number; lng: number }) {
 function InvalidateSize() {
     const map = useMap();
     useEffect(() => {
-        // Force Leaflet to recalculate container dimensions after layout settles
-        const id = setTimeout(() => map.invalidateSize(), 200);
+        // Force Leaflet to recalculate container dimensions after the first paint
+        const id = setTimeout(() => map.invalidateSize(), 50);
         return () => clearTimeout(id);
     }, [map]);
     return null;
@@ -94,14 +94,9 @@ interface TreesMapViewProps {
 
 export default function TreesMapView({ trees, center, onViewChange }: TreesMapViewProps) {
     const [mounted, setMounted] = useState(false);
+    useEffect(() => { setMounted(true); }, []);
 
-    useEffect(() => {
-        fixLeafletIcons();
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setMounted(true);
-    }, []);
-
-    if (!mounted) return null;
+    if (!mounted) return <div style={{ width: "100%", height: "100%", minHeight: "400px" }} />;
 
     return (
         <MapContainer

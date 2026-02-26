@@ -1,5 +1,8 @@
 package com.folia.server.tree;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -16,6 +19,7 @@ import org.springframework.boot.hibernate.autoconfigure.HibernateJpaAutoConfigur
 import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
+import com.folia.server.common.messages.MessageKey;
 import com.folia.server.common.messages.MessageService;
 import com.folia.server.exceptions.ApiExceptionHandler;
 import org.springframework.context.annotation.Bean;
@@ -27,6 +31,7 @@ import org.springframework.web.context.WebApplicationContext;
 import org.mockito.Mockito;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 @SpringBootTest(classes = TreeControllerTest.TestApp.class, webEnvironment = SpringBootTest.WebEnvironment.MOCK)
@@ -40,9 +45,17 @@ class TreeControllerTest {
     @Autowired
     TreeService treeService;
 
+    @Autowired
+    MessageService messageService;
+
     @BeforeEach
     void setUp() {
         mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
+        Mockito.reset(treeService, messageService);
+        when(messageService.get(eq(MessageKey.TREES_NEARBY_RETRIEVED_SUCCESSFULLY), any(Locale.class), any(Object[].class)))
+                .thenReturn("Nearby trees retrieved successfully");
+        when(messageService.get(eq(MessageKey.TREES_NEARBY_RETRIEVED_SUCCESSFULLY), isNull(), any(Object[].class)))
+                .thenReturn("Nearby trees retrieved successfully");
     }
 
     @Test
