@@ -47,7 +47,7 @@ public class ApiExceptionHandler {
             String translatedField = messageService.resolve(FIELD_PREFIX + fieldName, fieldName, locale);
             String key = translatedField != null ? translatedField : fieldName;
             String errorMessage = messageService.get(MessageKey.INVALID_ENUM_VALUE, locale,
-                    new Object[]{invalidValue, fieldName, acceptedValues});
+                    invalidValue, fieldName, acceptedValues);
             Map<String, String> errors = new HashMap<>();
             errors.put(key, errorMessage);
             String message = messageService.get(MessageKey.VALIDATION_FAILED, locale);

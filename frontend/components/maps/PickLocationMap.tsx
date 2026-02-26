@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback, useMemo, useState } from "react";
+import { useEffect, useCallback, useMemo, useSyncExternalStore } from "react";
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from "react-leaflet";
 import L from "leaflet";
 
@@ -41,8 +41,10 @@ interface PickLocationMapProps {
 }
 
 export default function PickLocationMap({ lat, lng, onLocationChange }: PickLocationMapProps) {
-    const [mounted, setMounted] = useState(false);
-    useEffect(() => { setMounted(true); }, []);
+    // useSyncExternalStore is the React-recommended way to detect client-side mounting
+    // without triggering the react-hooks/set-state-in-effect lint rule.
+    // Server snapshot → false (placeholder), client snapshot → true (real map).
+    const mounted = useSyncExternalStore(() => () => {}, () => true, () => false);
 
     const pinIcon = useMemo(() => L.divIcon({
         className: "",

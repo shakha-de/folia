@@ -4,11 +4,11 @@ import React, { useEffect, useState, useMemo, useCallback, useRef } from "react"
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import Header from "@/components/Header";
 import { useAuth } from "@/context/AuthContext";
 import { fetchNearbyTrees, fetchTreeStats, TreeDto, TreeStats } from "@/lib/api";
 import { getUserLocation, GeoLocation } from "@/lib/geolocation";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const TreesMapView = dynamic(() => import("@/components/maps/TreesMapView"), {
     ssr: false,
@@ -44,7 +44,7 @@ const filterLabels: { key: HealthFilter; label: string }[] = [
     { key: "HEALTHY", label: "Healthy" },
 ];
 
-function TreeCard({ tree }: Readonly<{ tree: TreeDto }>) {
+function TreeCard({ tree }: Readonly<{ tree: TreeDto }>): React.ReactElement {
     const badge = healthBadge[tree.healthStatus] ?? { label: tree.healthStatus, color: "text-slate-400", bg: "bg-slate-400/10" };
     const lastWatered = tree.lastWateredAt
         ? `Last watered: ${new Date(tree.lastWateredAt).toLocaleDateString()}`
@@ -72,7 +72,7 @@ function TreeCard({ tree }: Readonly<{ tree: TreeDto }>) {
     );
 }
 
-function StatsPill({ stats }: Readonly<{ stats: TreeStats }>) {
+function StatsPill({ stats }: Readonly<{ stats: TreeStats }>): React.ReactElement {
     return (
         <div className="flex gap-3 text-xs text-slate-500 dark:text-slate-400 px-5 pb-3">
             <span><span className="font-bold text-slate-900 dark:text-white">{stats.totalTrees}</span> trees</span>
@@ -81,7 +81,7 @@ function StatsPill({ stats }: Readonly<{ stats: TreeStats }>) {
     );
 }
 
-function LocationLabel({ locating, locError, location }: Readonly<{ locating: boolean; locError: boolean; location: GeoLocation | null }>) {
+function LocationLabel({ locating, locError, location }: Readonly<{ locating: boolean; locError: boolean; location: GeoLocation | null }>): React.ReactElement {
     if (locating) {
         return <span className="text-xs text-slate-400">Detecting location…</span>;
     }
@@ -99,8 +99,9 @@ function LocationLabel({ locating, locError, location }: Readonly<{ locating: bo
         </span>
     );
 }
-export default function TreesPage() {
-    const { user, loading } = useAuth();
+
+export default function TreesPage(): React.ReactElement {
+    const { user, loading, logout, isAuthenticated } = useAuth();
     const router = useRouter();
     const [location, setLocation] = useState<GeoLocation | null>(null);
     const [locating, setLocating] = useState(true);
@@ -110,6 +111,8 @@ export default function TreesPage() {
     const [search, setSearch] = useState("");
     const [filter, setFilter] = useState<HealthFilter>("ALL");
     const [fetching, setFetching] = useState(false);
+    const [sidebarOpen, setSidebarOpen] = useState(true);
+    const [navOpen, setNavOpen] = useState(false);
 
     // Track the last view we fetched for to avoid excessive calls
     const lastViewRef = useRef<{ lat: number; lng: number, radius: number } | null>(null);
@@ -196,12 +199,11 @@ export default function TreesPage() {
     }
 
     return (
-        <div className="bg-background-light dark:bg-background-dark h-screen flex flex-col overflow-hidden font-display">
-            <Header />
+        <div className="bg-background-light dark:bg-background-dark h-screen flex overflow-hidden font-display">
 
-            <div className="flex flex-1 min-h-0 overflow-hidden">
-                {/* Sidebar */}
-                <aside className="w-full md:w-100 lg:w-110 flex flex-col bg-white dark:bg-[#111812] border-r border-gray-200 dark:border-[#2a3f2d] z-20 h-full shadow-xl">
+            {/* ── Collapsible Sidebar ─────────────────────────────────────────── */}
+            <div className={`relative shrink-0 transition-all duration-300 ease-in-out ${sidebarOpen ? "w-full md:w-100 lg:w-110" : "w-0"}`}>
+                <aside className={`absolute inset-0 flex flex-col bg-white dark:bg-[#111812] border-r border-gray-200 dark:border-[#2a3f2d] z-20 shadow-xl overflow-hidden transition-opacity duration-300 ${sidebarOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}>
                     {/* Header */}
                     <div className="p-5 pb-2 border-b border-gray-100 dark:border-[#1e2f21]">
                         {/* Location indicator */}
@@ -270,63 +272,126 @@ export default function TreesPage() {
                     </div>
                 </aside>
 
-                {/* Map — always visible; overlays communicate location state */}
-                <main className="flex-1 min-h-0 relative overflow-hidden" style={{ height: "100%" }}>
-                    <div style={{ width: "100%", height: "100%", position: "relative" }}>
-                        <TreesMapView
-                            trees={filtered}
-                            center={location ?? DEFAULT_CENTER}
-                            onViewChange={handleMapViewChange}
-                        />
-
-                        {/* Locating overlay — shown while GPS/IP lookup is in progress */}
-                        {locating && (
-                            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-1000 bg-white/80 dark:bg-black/80 px-4 py-2 rounded-full backdrop-blur-sm border border-white/20 shadow-lg flex items-center gap-2 pointer-events-none">
-                                <div className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                                <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Detecting location…</span>
-                            </div>
-                        )}
-
-                        {/* Location unavailable badge — shown after failed detection */}
-                        {locError && !locating && (
-                            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-1000 bg-white/80 dark:bg-black/80 px-4 py-2 rounded-full backdrop-blur-sm border border-amber-400/40 shadow-lg flex items-center gap-2 pointer-events-none">
-                                <span className="material-symbols-outlined text-amber-400 text-[16px]">location_off</span>
-                                <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Location unavailable — showing Berlin</span>
-                            </div>
-                        )}
-
-                        {/* Syncing indicator */}
-                        {fetching && (
-                            <div className="absolute top-4 right-4 z-1000 bg-white/80 dark:bg-black/80 px-3 py-1.5 rounded-full backdrop-blur-sm border border-white/20 shadow-lg flex items-center gap-2">
-                                <div className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                                <span className="text-[10px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Syncing…</span>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Legend */}
-                    <div className="absolute bottom-6 right-6 z-1000 bg-white/90 dark:bg-[#1c271d]/90 backdrop-blur-sm p-4 rounded-lg shadow-lg border border-gray-200 dark:border-[#2a3f2d]">
-                        <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3">
-                            Health Status
-                        </h4>
-                        <div className="space-y-2">
-                            {[
-                                { color: "#13ec37", label: "Healthy" },
-                                { color: "#FFC107", label: "Stressed" },
-                                { color: "#FF5252", label: "Critical" },
-                            ].map(({ color, label }) => (
-                                <div key={label} className="flex items-center gap-2">
-                                    <span
-                                        className="w-3 h-3 rounded-full"
-                                        style={{ background: color, boxShadow: `0 0 6px ${color}80` }}
-                                    />
-                                    <span className="text-sm text-slate-700 dark:text-white font-medium">{label}</span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </main>
+                {/* Sidebar toggle tab — anchored to the right edge, always visible */}
+                <button
+                    onClick={() => setSidebarOpen((o) => !o)}
+                    aria-label={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
+                    className="absolute top-1/2 -translate-y-1/2 -right-5 z-30 flex items-center justify-center w-5 h-12 rounded-r-lg bg-white dark:bg-[#1c271d] border border-l-0 border-gray-200 dark:border-[#2a3f2d] shadow-md text-slate-400 hover:text-primary transition-colors"
+                >
+                    <span className="material-symbols-outlined text-[16px]">
+                        {sidebarOpen ? "chevron_left" : "chevron_right"}
+                    </span>
+                </button>
             </div>
+
+            {/* ── Map ─────────────────────────────────────────────────────────── */}
+            <main className="flex-1 min-h-0 relative overflow-hidden">
+                <TreesMapView
+                    trees={filtered}
+                    center={location ?? DEFAULT_CENTER}
+                    onViewChange={handleMapViewChange}
+                />
+
+                {/* ── Floating nav ──────────────────────────────────────────────── */}
+                <div className="absolute top-4 right-4 z-1001">
+                    <div className="flex items-center gap-2 bg-white/90 dark:bg-[#111812]/90 backdrop-blur-sm border border-gray-200 dark:border-[#2a3f2d] rounded-full px-3 py-1.5 shadow-lg">
+                        {/* Logo */}
+                        <Link href="/" className="flex items-center gap-1.5 mr-1 hover:opacity-80 transition-opacity">
+                            <span className="material-symbols-outlined text-primary text-[20px]">Forest</span>
+                            <span className="text-sm font-bold text-slate-900 dark:text-white hidden sm:block">Folia</span>
+                        </Link>
+
+                        <div className="w-px h-4 bg-gray-200 dark:bg-[#2a3f2d]" />
+
+                        {/* Nav links */}
+                        <div className="hidden md:flex items-center gap-1">
+                            <Link href="/almanac" className="text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary px-2 py-1 rounded-full transition-colors">Almanac</Link>
+                            <Link href="/learn-more" className="text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary px-2 py-1 rounded-full transition-colors">Learn More</Link>
+                        </div>
+
+                        <div className="hidden md:block w-px h-4 bg-gray-200 dark:bg-[#2a3f2d]" />
+
+                        <ThemeToggle />
+
+                        <div className="w-px h-4 bg-gray-200 dark:bg-[#2a3f2d]" />
+
+                        {/* User menu toggle */}
+                        <button
+                            onClick={() => setNavOpen((o) => !o)}
+                            aria-label="User menu"
+                            className="flex items-center gap-1 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary transition-colors"
+                        >
+                            <span className="material-symbols-outlined text-[18px]">account_circle</span>
+                            <span className="hidden sm:block max-w-20 truncate">{user?.username}</span>
+                            <span className="material-symbols-outlined text-[14px]">{navOpen ? "expand_less" : "expand_more"}</span>
+                        </button>
+                    </div>
+
+                    {/* Dropdown */}
+                    {navOpen && (
+                        <div className="absolute top-full right-0 mt-2 w-48 bg-white/95 dark:bg-[#111812]/95 backdrop-blur-sm border border-gray-200 dark:border-[#2a3f2d] rounded-xl shadow-xl overflow-hidden">
+                            <div className="md:hidden px-4 py-3 border-b border-gray-100 dark:border-[#1e2f21] flex flex-col gap-1">
+                                <Link href="/almanac" onClick={() => setNavOpen(false)} className="text-sm font-semibold text-slate-700 dark:text-slate-200 hover:text-primary py-1 transition-colors">Almanac</Link>
+                                <Link href="/learn-more" onClick={() => setNavOpen(false)} className="text-sm font-semibold text-slate-700 dark:text-slate-200 hover:text-primary py-1 transition-colors">Learn More</Link>
+                            </div>
+                            <div className="px-4 py-3 border-b border-gray-100 dark:border-[#1e2f21]">
+                                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">Signed in as</p>
+                                <p className="text-sm font-bold text-slate-800 dark:text-white truncate">{user?.username}</p>
+                            </div>
+                            {isAuthenticated && (
+                                <button
+                                    onClick={() => { logout(); setNavOpen(false); }}
+                                    className="w-full flex items-center gap-2 px-4 py-3 text-sm font-semibold text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+                                >
+                                    <span className="material-symbols-outlined text-[16px]">logout</span>
+                                    Log out
+                                </button>
+                            )}
+                        </div>
+                    )}
+                </div>
+
+                {/* Locating overlay */}
+                {locating && (
+                    <div className="absolute top-4 left-1/2 -translate-x-1/2 z-1000 bg-white/80 dark:bg-black/80 px-4 py-2 rounded-full backdrop-blur-sm border border-white/20 shadow-lg flex items-center gap-2 pointer-events-none">
+                        <div className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                        <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Detecting location…</span>
+                    </div>
+                )}
+
+                {/* Location unavailable badge */}
+                {locError && !locating && (
+                    <div className="absolute top-4 left-1/2 -translate-x-1/2 z-1000 bg-white/80 dark:bg-black/80 px-4 py-2 rounded-full backdrop-blur-sm border border-amber-400/40 shadow-lg flex items-center gap-2 pointer-events-none">
+                        <span className="material-symbols-outlined text-amber-400 text-[16px]">location_off</span>
+                        <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Location unavailable — showing Berlin</span>
+                    </div>
+                )}
+
+                {/* Syncing indicator */}
+                {fetching && (
+                    <div className="absolute bottom-24 right-4 z-1000 bg-white/80 dark:bg-black/80 px-3 py-1.5 rounded-full backdrop-blur-sm border border-white/20 shadow-lg flex items-center gap-2">
+                        <div className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                        <span className="text-[10px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Syncing…</span>
+                    </div>
+                )}
+
+                {/* Legend */}
+                <div className="absolute bottom-6 right-4 z-1000 bg-white/90 dark:bg-[#1c271d]/90 backdrop-blur-sm p-4 rounded-lg shadow-lg border border-gray-200 dark:border-[#2a3f2d]">
+                    <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3">Health Status</h4>
+                    <div className="space-y-2">
+                        {[
+                            { color: "#13ec37", label: "Healthy" },
+                            { color: "#FFC107", label: "Stressed" },
+                            { color: "#FF5252", label: "Critical" },
+                        ].map(({ color, label }) => (
+                            <div key={label} className="flex items-center gap-2">
+                                <span className="w-3 h-3 rounded-full" style={{ background: color, boxShadow: `0 0 6px ${color}80` }} />
+                                <span className="text-sm text-slate-700 dark:text-white font-medium">{label}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </main>
         </div>
     );
 }
