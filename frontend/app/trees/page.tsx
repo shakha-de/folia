@@ -281,7 +281,7 @@ export default function TreesPage() {
 
                         {/* Locating overlay — shown while GPS/IP lookup is in progress */}
                         {locating && (
-                            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000] bg-white/80 dark:bg-black/80 px-4 py-2 rounded-full backdrop-blur-sm border border-white/20 shadow-lg flex items-center gap-2 pointer-events-none">
+                            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-1000 bg-white/80 dark:bg-black/80 px-4 py-2 rounded-full backdrop-blur-sm border border-white/20 shadow-lg flex items-center gap-2 pointer-events-none">
                                 <div className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                                 <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Detecting location…</span>
                             </div>
@@ -297,7 +297,7 @@ export default function TreesPage() {
 
                         {/* Syncing indicator */}
                         {fetching && (
-                            <div className="absolute top-4 right-4 z-[1000] bg-white/80 dark:bg-black/80 px-3 py-1.5 rounded-full backdrop-blur-sm border border-white/20 shadow-lg flex items-center gap-2">
+                            <div className="absolute top-4 right-4 z-1000 bg-white/80 dark:bg-black/80 px-3 py-1.5 rounded-full backdrop-blur-sm border border-white/20 shadow-lg flex items-center gap-2">
                                 <div className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                                 <span className="text-[10px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Syncing…</span>
                             </div>
@@ -305,7 +305,7 @@ export default function TreesPage() {
                     </div>
 
                     {/* Legend */}
-                    <div className="absolute bottom-6 right-6 z-[1000] bg-white/90 dark:bg-[#1c271d]/90 backdrop-blur-sm p-4 rounded-lg shadow-lg border border-gray-200 dark:border-[#2a3f2d]">
+                    <div className="absolute bottom-6 right-6 z-1000 bg-white/90 dark:bg-[#1c271d]/90 backdrop-blur-sm p-4 rounded-lg shadow-lg border border-gray-200 dark:border-[#2a3f2d]">
                         <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3">
                             Health Status
                         </h4>

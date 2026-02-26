@@ -29,6 +29,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ApiExceptionHandler {
 
+    private static final String FIELD_PREFIX = "field.";
+    private static final String VALIDATION_FAILED_FALLBACK = "Validation failed";
+
     private final MessageService messageService;
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
@@ -41,14 +44,14 @@ public class ApiExceptionHandler {
             String acceptedValues = Arrays.stream(ife.getTargetType().getEnumConstants())
                     .map(e -> ((Enum<?>) e).name())
                     .collect(Collectors.joining(", "));
-            String translatedField = messageService.resolve("field." + fieldName, fieldName, locale);
+            String translatedField = messageService.resolve(FIELD_PREFIX + fieldName, fieldName, locale);
             String key = translatedField != null ? translatedField : fieldName;
             String errorMessage = messageService.get(MessageKey.INVALID_ENUM_VALUE, locale,
                     new Object[]{invalidValue, fieldName, acceptedValues});
             Map<String, String> errors = new HashMap<>();
             errors.put(key, errorMessage);
             String message = messageService.get(MessageKey.VALIDATION_FAILED, locale);
-            return ResponseUtils.badRequest(message != null ? message : "Validation failed", errors);
+            return ResponseUtils.badRequest(message != null ? message : VALIDATION_FAILED_FALLBACK, errors);
         }
         log.error("Unreadable HTTP message: {}", ex.getMessage(), ex);
         String message = messageService.get(MessageKey.INTERNAL_SERVER_ERROR, locale);
@@ -96,14 +99,14 @@ public class ApiExceptionHandler {
         ex.getBindingResult().getFieldErrors().forEach(
             error -> {
                 String fieldName = error.getField();
-                String translatedField = messageService.resolve("field." + fieldName, fieldName, locale);
+                String translatedField = messageService.resolve(FIELD_PREFIX + fieldName, fieldName, locale);
                 // Resilience: Use fieldName if translation service returns null (e.g. in tests with missing mocks)
                 String key = translatedField != null ? translatedField : fieldName;
                 errors.put(key, error.getDefaultMessage());
             }
         );
         String message = messageService.get(MessageKey.VALIDATION_FAILED, locale);
-        return ResponseUtils.badRequest(message != null ? message : "Validation failed", errors);
+        return ResponseUtils.badRequest(message != null ? message : VALIDATION_FAILED_FALLBACK, errors);
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
@@ -116,14 +119,14 @@ public class ApiExceptionHandler {
                 String fieldName = propertyPath.contains(".")
                     ? propertyPath.substring(propertyPath.lastIndexOf('.') + 1)
                     : propertyPath;
-                String translatedField = messageService.resolve("field." + fieldName, fieldName, locale);
+                String translatedField = messageService.resolve(FIELD_PREFIX + fieldName, fieldName, locale);
                 // Resilience: Use fieldName if translation service returns null
                 String key = translatedField != null ? translatedField : fieldName;
                 errors.put(key, violation.getMessage());
             }
         );
         String message = messageService.get(MessageKey.VALIDATION_FAILED, locale);
-        return ResponseUtils.badRequest(message != null ? message : "Validation failed", errors);
+        return ResponseUtils.badRequest(message != null ? message : VALIDATION_FAILED_FALLBACK, errors);
     }
 
     @ExceptionHandler(UserNotFoundException.class)
@@ -168,7 +171,7 @@ public class ApiExceptionHandler {
     }
 
     @ExceptionHandler(BadCredentialsException.class)
-    ResponseEntity<ApiResponse<Void>> handleBadCredentialsException(BadCredentialsException exception) {
+    ResponseEntity<ApiResponse<Void>> handleBadCredentialsException(BadCredentialsException ignored) {
         Locale locale = LocaleContextHolder.getLocale();
         String message = messageService.get(MessageKey.AUTH_INVALID_CREDENTIALS, locale);
         return ResponseUtils.badRequest(message != null ? message : "Invalid username or password");

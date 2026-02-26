@@ -7,7 +7,7 @@ public class TreeNotFoundException extends RuntimeException {
     @Getter
     private final MessageKey messageKey;
     @Getter
-    private final Object[] args;
+    private final transient Object[] args;
 
     public TreeNotFoundException(MessageKey messageKey, Object... args) {
         super(messageKey.name());

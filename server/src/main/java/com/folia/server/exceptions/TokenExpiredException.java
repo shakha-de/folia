@@ -7,7 +7,7 @@ public class TokenExpiredException extends RuntimeException {
     @Getter
     private final MessageKey messageKey;
     @Getter
-    private final Object[] args;
+    private final transient Object[] args;
 
     public TokenExpiredException(MessageKey messageKey, Object... args) {
         super(messageKey.name());

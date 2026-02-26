@@ -7,7 +7,7 @@ public class UserNotFoundException extends RuntimeException {
     @Getter
     private final MessageKey messageKey;
     @Getter
-    private final Object[] args;
+    private final transient Object[] args;
 
     public UserNotFoundException(MessageKey messageKey, Object... args) {
         super(messageKey.name());

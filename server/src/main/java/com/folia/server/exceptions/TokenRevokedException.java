@@ -7,7 +7,7 @@ public class TokenRevokedException extends RuntimeException {
     @Getter
     private final MessageKey messageKey;
     @Getter
-    private final Object[] args;
+    private final transient Object[] args;
 
     public TokenRevokedException(MessageKey messageKey, Object... args) {
         super(messageKey.name());

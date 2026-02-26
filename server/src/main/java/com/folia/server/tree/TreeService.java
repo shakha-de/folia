@@ -55,8 +55,10 @@ public class TreeService {
         request.optionalSoilMoistureLevel().ifPresent(tree::setSoilMoistureLevel);
         request.optionalHealthStatus().ifPresent(tree::setHealthStatus);
         request.optionalMetadata().ifPresent(tree::setMetadata);
-        if (request.optionalLat().isPresent() && request.optionalLng().isPresent()) {
-            tree.setLocation(point(request.optionalLng().get(), request.optionalLat().get()));
+        var optLat = request.optionalLat();
+        var optLng = request.optionalLng();
+        if (optLat.isPresent() && optLng.isPresent()) {
+            tree.setLocation(point(optLng.get(), optLat.get()));
         }
 
         return treeRepository.save(tree);
