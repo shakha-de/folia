@@ -9,14 +9,15 @@ spring:
   # Database Configuration (Neon)
   # ===========================
   datasource:
-    url: "jdbc:postgresql://${NEON_DATABASE}"
-    username: "${POSTGRES_USER}"
-    password: "${POSTGRES_PASSWORD}"
+    url: "${SPRING_DATASOURCE_URL:jdbc:postgresql://${NEON_DATABASE}}"
+    username: "${SPRING_DATASOURCE_USERNAME:${POSTGRES_USER}}"
+    password: "${SPRING_DATASOURCE_PASSWORD:${POSTGRES_PASSWORD}}"
 
     hikari:
       maximum-pool-size: 5
       minimum-idle: 1
       connection-timeout: 30000
+      initialization-fail-timeout: 0
       idle-timeout: 600000
       max-lifetime: 1800000
       keepalive-time: 60000
@@ -28,6 +29,7 @@ spring:
     properties:
       hibernate:
         format_sql: false
+        dialect: org.hibernate.dialect.PostgreSQLDialect
       jdbc:
         lob:
           non_textual_creation: true
