@@ -5,37 +5,37 @@ spring:
   messages:
     encoding: UTF-8
 
-
   # ===========================
-  # Database Configuration
+  # Database Configuration (Neon)
   # ===========================
   datasource:
-    #url: "jdbc:postgresql://${HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:folia}"
     url: "jdbc:postgresql://${NEON_DATABASE}"
-    username: "${POSTGRES_USER:folia}"
-    password: "${POSTGRES_PASSWORD:folia}"
+    username: "${POSTGRES_USER}"
+    password: "${POSTGRES_PASSWORD}"
 
-    # Connection Pool
     hikari:
       maximum-pool-size: 5
+      minimum-idle: 1
       connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      keepalive-time: 60000
 
   jpa:
     defer-datasource-initialization: true
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: update
     properties:
       hibernate:
-        format_sql: true
+        format_sql: false
       jdbc:
         lob:
           non_textual_creation: true
-    show-sql: true
+    show-sql: false
+    open-in-view: false
 
   flyway:
     enabled: false
-    locations: classpath:db/migration,classpath:db/dev-migration
-    clean-disabled: false
 
   servlet:
     multipart:
@@ -49,11 +49,16 @@ spring:
       force-request: true
       force-response: true
 
-jwt:
-  secret: "${JWT_SECRET:dev-secret-change-me-please-change-me-please}"
-  expiration: ${JWT_EXPIRATION:3600000}
+application:
+  security:
+    jwt:
+      secret-key: "${JWT_SECRET}"
+      expiration: ${JWT_EXPIRATION:86400000}       # 1 Tag
+      refresh-token:
+        expiration: ${JWT_REFRESH_EXPIRATION:604800000}  # 7 Tage
 
 logging:
-    level:
-        org.springframework: DEBUG
+  level:
+    org.springframework: WARN
+    com.folia: INFO
 

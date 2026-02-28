@@ -37,7 +37,6 @@ spring:
     properties:
       hibernate:
         format_sql: true
-        dialect: org.hibernate.spatial.dialect.postgis.PostgisPG10Dialect
       jdbc:
         lob:
           non_textual_creation: true

@@ -11,6 +11,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -68,6 +69,7 @@ public class TreeController {
     }
 
     @GetMapping("/{publicId}")
+    @PreAuthorize("@treeService.getTreeByPublicId(#publicId).registeredBy.username == authentication.name")
     public ResponseEntity<ApiResponse<TreeDto>> findById(@PathVariable UUID publicId, Locale locale) {
         Tree tree = treeService.getTreeByPublicId(publicId);
         return ResponseUtils.ok(TreeDto.from(tree), ms.get(MessageKey.TREE_RETRIEVED_SUCCESSFULLY, locale));

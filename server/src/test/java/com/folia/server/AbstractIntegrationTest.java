@@ -27,7 +27,7 @@ public abstract class AbstractIntegrationTest {
         registry.add("spring.datasource.password", POSTGRES::getPassword);
         registry.add("spring.jpa.defer-datasource-initialization", () -> "true");
         registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
-        registry.add("spring.jpa.properties.hibernate.dialect", () -> "org.hibernate.spatial.dialect.postgis.PostgisPG10Dialect");
+        registry.add("spring.jpa.properties.hibernate.dialect", () -> "org.hibernate.dialect.PostgreSQLDialect");
         registry.add("spring.flyway.enabled", () -> "false");
     }
 }
