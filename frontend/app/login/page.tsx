@@ -14,6 +14,7 @@ export default function LoginPage() {
     const [isLoading, setIsLoading] = useState(false);
     const { login, isAuthenticated, loading } = useAuth();
     const router = useRouter();
+    const isProd = process.env.NODE_ENV === "production" || process.env.NEXT_PUBLIC_APP_ENV === "prod";
 
     useEffect(() => {
         if (!loading && isAuthenticated) {
@@ -51,6 +52,11 @@ export default function LoginPage() {
                     <p className="mt-2 text-sm text-slate-600 dark:text-[#9db9a1]">
                         Login to your guardian account
                     </p>
+                    {isProd && (
+                        <p className="mt-3 text-xs text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-[#1b2b1e] border border-slate-200 dark:border-[#28392b] rounded-md px-3 py-2">
+                            Hinweis: Diese Produktionsumgebung ist nur zu Testzwecken. Alle Daten können jederzeit gelöscht werden.
+                        </p>
+                    )}
                 </div>
 
                 <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
