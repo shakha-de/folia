@@ -1,31 +1,63 @@
 "use client";
 
-import React, { useEffect, useState, useMemo, useCallback, useRef } from "react";
+import React, { useEffect, useState, useMemo, useCallback, useRef, Suspense } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { fetchNearbyTrees, fetchTreeStats, TreeDto, TreeStats } from "@/lib/api";
+import { fetchNearbyTrees, fetchTreeStats, createTree, TreeDto, TreeStats, HealthStatus, SoilMoistureLevel } from "@/lib/api";
 import { getUserLocation, GeoLocation } from "@/lib/geolocation";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
-const TreesMapView = dynamic(() => import("@/components/maps/TreesMapView"), {
-    ssr: false,
-    loading: () => (
+function MapLoader() {
+    return (
         <div className="w-full h-full flex items-center justify-center bg-[#0d1a0f] animate-pulse">
             <div className="flex flex-col items-center gap-3">
                 <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                 <p className="text-slate-500 text-xs uppercase tracking-widest">Loading map…</p>
             </div>
         </div>
-    ),
+    );
+}
+
+const TreesMapView = dynamic(() => import("@/components/maps/TreesMapView"), {
+    ssr: false,
+    loading: () => <MapLoader />,
+});
+
+const PickLocationMap = dynamic(() => import("@/components/maps/PickLocationMap"), {
+    ssr: false,
+    loading: () => <MapLoader />,
 });
 
 // Fallback map center used before/if user location is detected
 const DEFAULT_CENTER = { lat: 52.52, lng: 13.405 }; // Berlin
 
 type HealthFilter = "ALL" | "HEALTHY" | "STRESSED" | "DYING" | "NEEDS_CARE";
+type PageMode = "browse" | "register";
+
+const SPECIES_OPTIONS = [
+    { value: "Ulmus pumila", label: "Siberian Elm (Ulmus pumila)" },
+    { value: "Platanus orientalis", label: "Chinar (Platanus orientalis)" },
+    { value: "Populus alba", label: "White Poplar (Populus alba)" },
+    { value: "Platanus × acerifolia", label: "London Plane (Platanus × acerifolia)" },
+    { value: "Fraxinus sogdiana", label: "Desert Ash (Fraxinus sogdiana)" },
+];
+
+const MOISTURE_OPTIONS: { value: SoilMoistureLevel; label: string; icon: string }[] = [
+    { value: "DRY", label: "Dry", icon: "💧" },
+    { value: "MODERATE", label: "Moderate", icon: "💧💧" },
+    { value: "WET", label: "Wet", icon: "💧💧💧" },
+];
+
+const HEALTH_OPTIONS: { value: HealthStatus; label: string; activeClass: string }[] = [
+    { value: "HEALTHY", label: "Healthy", activeClass: "border-primary bg-primary text-black" },
+    { value: "STRESSED", label: "Stressed", activeClass: "border-yellow-400 bg-yellow-400 text-black" },
+    { value: "DYING", label: "Critical", activeClass: "border-red-500 bg-red-500 text-white" },
+];
 
 const healthBadge: Record<string, { label: string; color: string; bg: string }> = {
     HEALTHY: { label: "Healthy", color: "text-primary", bg: "bg-primary/10" },
@@ -44,7 +76,7 @@ const filterLabels: { key: HealthFilter; label: string }[] = [
     { key: "HEALTHY", label: "Healthy" },
 ];
 
-function TreeCard({ tree }: Readonly<{ tree: TreeDto }>): React.ReactElement {
+const TreeCard = React.memo(function TreeCard({ tree }: Readonly<{ tree: TreeDto }>): React.ReactElement {
     const badge = healthBadge[tree.healthStatus] ?? { label: tree.healthStatus, color: "text-slate-400", bg: "bg-slate-400/10" };
     const lastWatered = tree.lastWateredAt
         ? `Last watered: ${new Date(tree.lastWateredAt).toLocaleDateString()}`
@@ -70,18 +102,18 @@ function TreeCard({ tree }: Readonly<{ tree: TreeDto }>): React.ReactElement {
             </div>
         </div>
     );
-}
+});
 
-function StatsPill({ stats }: Readonly<{ stats: TreeStats }>): React.ReactElement {
+const StatsPill = React.memo(function StatsPill({ stats }: Readonly<{ stats: TreeStats }>): React.ReactElement {
     return (
         <div className="flex gap-3 text-xs text-slate-500 dark:text-slate-400 px-5 pb-3">
             <span><span className="font-bold text-slate-900 dark:text-white">{stats.totalTrees}</span> trees</span>
             <span><span className="font-bold text-red-400">{stats.treesNeedingWater}</span> need water</span>
         </div>
     );
-}
+});
 
-function LocationLabel({ locating, locError, location }: Readonly<{ locating: boolean; locError: boolean; location: GeoLocation | null }>): React.ReactElement {
+const LocationLabel = React.memo(function LocationLabel({ locating, locError, location }: Readonly<{ locating: boolean; locError: boolean; location: GeoLocation | null }>): React.ReactElement {
     if (locating) {
         return <span className="text-xs text-slate-400">Detecting location…</span>;
     }
@@ -98,11 +130,14 @@ function LocationLabel({ locating, locError, location }: Readonly<{ locating: bo
             <span className="ml-1 text-slate-400 dark:text-slate-500">({accuracy})</span>
         </span>
     );
-}
+});
 
-export default function TreesPage(): React.ReactElement {
+function TreesPageInner(): React.ReactElement {
     const { user, loading, logout, isAuthenticated } = useAuth();
     const router = useRouter();
+    const searchParams = useSearchParams();
+
+    // ── Browse state ────────────────────────────────────────────────────────────────────────
     const [location, setLocation] = useState<GeoLocation | null>(null);
     const [locating, setLocating] = useState(true);
     const [locError, setLocError] = useState(false);
@@ -111,11 +146,31 @@ export default function TreesPage(): React.ReactElement {
     const [search, setSearch] = useState("");
     const [filter, setFilter] = useState<HealthFilter>("ALL");
     const [fetching, setFetching] = useState(false);
+
+    // ── UI state ──────────────────────────────────────────────────────────────────────────
+    const [mode, setMode] = useState<PageMode>(() =>
+        searchParams?.get("register") === "true" ? "register" : "browse"
+    );
     const [sidebarOpen, setSidebarOpen] = useState(() => {
         if (typeof window === "undefined") return true;
         return window.innerWidth >= 1024;
     });
     const [navOpen, setNavOpen] = useState(false);
+
+    // ── Register form state ────────────────────────────────────────────────────────────────
+    const [regLat, setRegLat] = useState<number | null>(null);
+    const [regLng, setRegLng] = useState<number | null>(null);
+    const [species, setSpecies] = useState("Ulmus pumila");
+    const [commonName, setCommonName] = useState("");
+    const [soilMoisture, setSoilMoisture] = useState<SoilMoistureLevel>("MODERATE");
+    const [healthStatus, setHealthStatus] = useState<HealthStatus>("HEALTHY");
+    const [submitting, setSubmitting] = useState(false);
+    const [successMsg, setSuccessMsg] = useState("");
+    const [errorMsg, setErrorMsg] = useState("");
+    const [mapPointPicked, setMapPointPicked] = useState(false);
+    const [speciesFocused, setSpeciesFocused] = useState(false);
+    const [showMapTip, setShowMapTip] = useState(false);
+    const [mapTipFading, setMapTipFading] = useState(false);
 
     useEffect(() => {
         const onResize = () => {
@@ -143,7 +198,7 @@ export default function TreesPage(): React.ReactElement {
             setLocating(false);
             const center = loc ?? DEFAULT_CENTER;
             if (!loc) setLocError(true);
-            else setLocation(loc);
+            else { setLocation(loc); setRegLat(loc.lat); setRegLng(loc.lng); }
             lastViewRef.current = { lat: center.lat, lng: center.lng, radius: 20000 };
             return Promise.all([
                 fetchNearbyTrees(center.lat, center.lng, 20000),
@@ -156,6 +211,68 @@ export default function TreesPage(): React.ReactElement {
             setStats(s);
         }).catch(() => { setLocating(false); setLocError(true); });
     }, [user]);
+
+    const switchToRegister = useCallback(() => {
+        setMode("register");
+        setSidebarOpen(true);
+        setSuccessMsg("");
+        setErrorMsg("");
+        setMapPointPicked(false);
+        setShowMapTip(true);
+        setMapTipFading(false);
+        const fadeTimer = window.setTimeout(() => setMapTipFading(true), 2500);
+        const hideTimer = window.setTimeout(() => setShowMapTip(false), 3500);
+        return () => { window.clearTimeout(fadeTimer); window.clearTimeout(hideTimer); };
+    }, []);
+
+    const switchToBrowse = useCallback(() => {
+        setMode("browse");
+        setSuccessMsg("");
+        setErrorMsg("");
+    }, []);
+
+    const handleLocationChange = useCallback((newLat: number, newLng: number) => {
+        setRegLat(newLat);
+        setRegLng(newLng);
+        setMapPointPicked(true);
+        if (window.innerWidth < 1024) setSidebarOpen(true);
+    }, []);
+
+    const handleSubmit = useCallback(async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (regLat === null || regLng === null) {
+            setErrorMsg("Please pick a location on the map.");
+            return;
+        }
+        setSubmitting(true);
+        setErrorMsg("");
+        setSuccessMsg("");
+        const finalSpecies = species.trim() || commonName.trim() || "Unknown";
+        const result = await createTree({
+            species: finalSpecies,
+            commonName: commonName.trim() || finalSpecies,
+            lat: regLat,
+            lng: regLng,
+            soilMoistureLevel: soilMoisture,
+            healthStatus,
+        });
+        setSubmitting(false);
+        if (result) {
+            setSuccessMsg("Tree registered successfully!");
+            fetchNearbyTrees(regLat, regLng, 20000).then(setTrees);
+            setTimeout(() => { setSuccessMsg(""); switchToBrowse(); }, 1500);
+        } else {
+            setErrorMsg("Failed to register tree. Please try again.");
+        }
+    }, [regLat, regLng, species, commonName, soilMoisture, healthStatus, switchToBrowse]);
+
+    const speciesSuggestions = useMemo(() => {
+        const query = species.trim().toLowerCase();
+        if (!query) return SPECIES_OPTIONS.slice(0, 5);
+        return SPECIES_OPTIONS.filter(o =>
+            o.value.toLowerCase().includes(query) || o.label.toLowerCase().includes(query)
+        ).slice(0, 6);
+    }, [species]);
 
     const handleMapViewChange = useCallback((center: { lat: number; lng: number }, radius: number) => {
         if (!user) return;
@@ -215,13 +332,32 @@ export default function TreesPage(): React.ReactElement {
     return (
         <div className="bg-background-light dark:bg-background-dark h-screen flex overflow-hidden font-display">
 
+            {/* Mobile backdrop — tap outside to close sidebar */}
+            {sidebarOpen && (
+                <div
+                    className="lg:hidden fixed inset-0 z-20 bg-black/40"
+                    onClick={() => setSidebarOpen(false)}
+                    aria-hidden="true"
+                />
+            )}
+
             {/* ── Collapsible Sidebar ─────────────────────────────────────────── */}
             <div className={`absolute inset-y-0 left-0 z-30 shrink-0 transition-all duration-300 ease-in-out lg:relative lg:z-20 ${sidebarOpen ? "w-[78vw] max-w-[320px] sm:w-[70vw] sm:max-w-sm md:w-96 lg:w-110" : "w-0"}`}>
                 <aside className={`absolute inset-0 flex flex-col bg-white dark:bg-[#111812] border-r border-gray-200 dark:border-[#2a3f2d] z-20 shadow-xl overflow-hidden transition-opacity duration-300 ${sidebarOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}>
                     {/* Header */}
                     <div className="p-5 pb-2 border-b border-gray-100 dark:border-[#1e2f21]">
                         <div className="flex items-center justify-between mb-3">
-                            <h2 className="text-sm font-bold text-slate-900 dark:text-white tracking-wide">Nearby Trees</h2>
+                            {mode === "register" ? (
+                                <>
+                                    <button onClick={switchToBrowse} className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors">
+                                        <span className="material-symbols-outlined text-[16px]">arrow_back</span>
+                                        Back
+                                    </button>
+                                    <h2 className="text-sm font-bold text-slate-900 dark:text-white tracking-wide">Register Tree</h2>
+                                </>
+                            ) : (
+                                <h2 className="text-sm font-bold text-slate-900 dark:text-white tracking-wide">Nearby Trees</h2>
+                            )}
                             <button
                                 onClick={() => setSidebarOpen(false)}
                                 aria-label="Minimize sidebar"
@@ -231,70 +367,179 @@ export default function TreesPage(): React.ReactElement {
                             </button>
                         </div>
 
-                        {/* Location indicator */}
-                        <div className="flex items-center gap-2 mb-3 px-1">
-                            <span className="material-symbols-outlined text-[16px] text-slate-400">location_on</span>
-                            <LocationLabel locating={locating} locError={locError} location={location} />
-                        </div>
-                        <div className="relative mb-3">
-                            <span className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-                                <span className="material-symbols-outlined text-slate-400 text-[20px]">search</span>
-                            </span>
-                            <input
-                                type="text"
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                placeholder="Search trees or species…"
-                                className="w-full pl-10 pr-3 py-2.5 rounded-lg bg-gray-100 dark:bg-[#1c271d] border-none text-sm text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary/50"
-                            />
-                        </div>
-
-                        {/* Filter pills */}
-                        <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                            {filterLabels.map(({ key, label }) => (
-                                <button
-                                    key={key}
-                                    onClick={() => setFilter(key)}
-                                    className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${filter === key
-                                            ? "bg-primary text-black"
-                                            : "bg-gray-100 dark:bg-[#1c271d] border border-transparent dark:border-[#2f4532] text-slate-600 dark:text-slate-400 hover:bg-gray-200 dark:hover:bg-[#2f4532]"
-                                        }`}
-                                >
-                                    {key === "DYING" && (
-                                        <span className="w-2 h-2 rounded-full bg-red-500 inline-block" />
-                                    )}
-                                    {key === "STRESSED" && (
-                                        <span className="w-2 h-2 rounded-full bg-yellow-400 inline-block" />
-                                    )}
-                                    {label}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Stats */}
-                    {stats && <StatsPill stats={stats} />}
-
-                    {/* Tree list */}
-                    <div className="flex-1 overflow-y-auto p-5 pt-2 space-y-3">
-                        {filtered.length === 0 ? (
-                            <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-8">
-                                No trees found.
-                            </p>
+                        {mode === "browse" ? (
+                            <>
+                                {/* Location indicator */}
+                                <div className="flex items-center gap-2 mb-3 px-1">
+                                    <span className="material-symbols-outlined text-[16px] text-slate-400">location_on</span>
+                                    <LocationLabel locating={locating} locError={locError} location={location} />
+                                </div>
+                                <div className="relative mb-3">
+                                    <span className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                                        <span className="material-symbols-outlined text-slate-400 text-[20px]">search</span>
+                                    </span>
+                                    <input
+                                        type="text"
+                                        value={search}
+                                        onChange={(e) => setSearch(e.target.value)}
+                                        placeholder="Search trees or species…"
+                                        className="w-full pl-10 pr-3 py-2.5 rounded-lg bg-gray-100 dark:bg-[#1c271d] border-none text-sm text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary/50"
+                                    />
+                                </div>
+                                {/* Filter pills */}
+                                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                                    {filterLabels.map(({ key, label }) => (
+                                        <button
+                                            key={key}
+                                            onClick={() => setFilter(key)}
+                                            className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${filter === key
+                                                    ? "bg-primary text-black"
+                                                    : "bg-gray-100 dark:bg-[#1c271d] border border-transparent dark:border-[#2f4532] text-slate-600 dark:text-slate-400 hover:bg-gray-200 dark:hover:bg-[#2f4532]"
+                                                }`}
+                                        >
+                                            {key === "DYING" && (
+                                                <span className="w-2 h-2 rounded-full bg-red-500 inline-block" />
+                                            )}
+                                            {key === "STRESSED" && (
+                                                <span className="w-2 h-2 rounded-full bg-yellow-400 inline-block" />
+                                            )}
+                                            {label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </>
                         ) : (
-                            filtered.map((tree) => <TreeCard key={tree.publicId} tree={tree} />)
+                            <div className="flex items-center gap-2 px-1 pb-2">
+                                <span className={`w-2.5 h-2.5 rounded-full ${mapPointPicked ? "bg-primary" : "bg-slate-400"}`} />
+                                <span className="text-xs text-slate-500 dark:text-slate-400">
+                                    {mapPointPicked ? `${regLat?.toFixed(5)}, ${regLng?.toFixed(5)}` : "Tap map to set location"}
+                                </span>
+                            </div>
                         )}
                     </div>
 
-                    {/* CTA */}
-                    <div className="p-5 border-t border-gray-100 dark:border-[#1e2f21] bg-white dark:bg-[#111812]">
-                        <Link href="/trees/new">
-                            <Button className="w-full bg-primary hover:bg-[#0fd630] text-black font-semibold py-3 rounded-lg gap-2">
-                                <span className="material-symbols-outlined text-[20px]">add_circle</span>
-                                Register New Tree
-                            </Button>
-                        </Link>
-                    </div>
+                    {mode === "browse" ? (
+                        <>
+                            {/* Stats */}
+                            {stats && <StatsPill stats={stats} />}
+
+                            {/* Tree list */}
+                            <div className="flex-1 overflow-y-auto p-5 pt-2 space-y-3">
+                                {filtered.length === 0 ? (
+                                    <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-8">
+                                        No trees found.
+                                    </p>
+                                ) : (
+                                    filtered.map((tree) => <TreeCard key={tree.publicId} tree={tree} />)
+                                )}
+                            </div>
+
+                            {/* CTA */}
+                            <div className="p-5 border-t border-gray-100 dark:border-[#1e2f21] bg-white dark:bg-[#111812]">
+                                <Button onClick={switchToRegister} className="w-full bg-primary hover:bg-[#0fd630] text-black font-semibold py-3 rounded-lg gap-2">
+                                    <span className="material-symbols-outlined text-[20px]">add_circle</span>
+                                    Register New Tree
+                                </Button>
+                            </div>
+                        </>
+                    ) : (
+                        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+                            <div className="flex-1 overflow-y-auto p-5 space-y-5">
+                                {errorMsg && (
+                                    <div className="text-xs text-red-500 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2">{errorMsg}</div>
+                                )}
+                                {successMsg && (
+                                    <div className="text-xs text-primary bg-primary/10 border border-primary/30 rounded-lg px-3 py-2">{successMsg}</div>
+                                )}
+
+                                {/* Species */}
+                                <div className="relative space-y-1.5">
+                                    <Label htmlFor="species" className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Species</Label>
+                                    <div className="relative">
+                                        <Input
+                                            id="species"
+                                            value={species}
+                                            onChange={(e) => setSpecies(e.target.value)}
+                                            onFocus={() => setSpeciesFocused(true)}
+                                            onBlur={() => setTimeout(() => setSpeciesFocused(false), 200)}
+                                            placeholder="Start typing…"
+                                            autoComplete="off"
+                                            className="w-full text-sm bg-white dark:bg-[#1c271d] border-gray-200 dark:border-[#2a3f2d] text-slate-900 dark:text-white placeholder-slate-400"
+                                        />
+                                        {speciesFocused && speciesSuggestions.length > 0 && (
+                                            <ul className="absolute left-0 right-0 top-full mt-1 z-50 bg-white dark:bg-[#1c271d] border border-gray-200 dark:border-[#2a3f2d] rounded-lg overflow-hidden shadow-lg max-h-48 overflow-y-auto">
+                                                {speciesSuggestions.map((s) => (
+                                                    <li key={s.value}
+                                                        onPointerDown={(e) => { e.preventDefault(); setSpecies(s.value); setSpeciesFocused(false); }}
+                                                        className="px-4 py-2.5 text-sm text-slate-800 dark:text-white hover:bg-primary/10 cursor-pointer"
+                                                    >
+                                                        <span className="font-semibold">{s.value}</span>
+                                                        <span className="block text-xs text-slate-400">{s.label.split("(")[1]?.replace(")", "") ?? ""}</span>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Common name */}
+                                <div className="space-y-1.5">
+                                    <Label htmlFor="commonName" className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Common Name <span className="font-normal text-slate-400">(optional)</span></Label>
+                                    <Input
+                                        id="commonName"
+                                        value={commonName}
+                                        onChange={(e) => setCommonName(e.target.value)}
+                                        placeholder="e.g. Elm, Chinar…"
+                                        className="w-full text-sm bg-white dark:bg-[#1c271d] border-gray-200 dark:border-[#2a3f2d] text-slate-900 dark:text-white placeholder-slate-400"
+                                    />
+                                </div>
+
+                                {/* Soil Moisture */}
+                                <div className="space-y-2">
+                                    <Label className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Soil Moisture</Label>
+                                    <div className="flex gap-2">
+                                        {MOISTURE_OPTIONS.map((opt) => (
+                                            <button key={opt.value} type="button"
+                                                onPointerDown={(e) => { e.preventDefault(); setSoilMoisture(opt.value); }}
+                                                className={`flex-1 py-2 rounded-lg border text-xs font-semibold transition-colors ${soilMoisture === opt.value ? "border-primary bg-primary text-black" : "border-gray-200 dark:border-[#2a3f2d] text-slate-600 dark:text-slate-300 hover:border-primary/50"}`}
+                                            >
+                                                {opt.icon} {opt.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Health Status */}
+                                <div className="space-y-2">
+                                    <Label className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Health Status</Label>
+                                    <div className="flex gap-2">
+                                        {HEALTH_OPTIONS.map((opt) => (
+                                            <button key={opt.value} type="button"
+                                                onPointerDown={(e) => { e.preventDefault(); setHealthStatus(opt.value); }}
+                                                className={`flex-1 py-2 rounded-lg border text-xs font-semibold transition-colors ${healthStatus === opt.value ? opt.activeClass : "border-gray-200 dark:border-[#2a3f2d] text-slate-600 dark:text-slate-300 hover:border-primary/50"}`}
+                                            >
+                                                {opt.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="p-5 border-t border-gray-100 dark:border-[#1e2f21] bg-white dark:bg-[#111812] flex gap-2">
+                                <Button type="button" variant="outline" onClick={switchToBrowse} className="flex-1 border-gray-200 dark:border-[#2a3f2d]">
+                                    Cancel
+                                </Button>
+                                <Button type="submit" disabled={submitting} className="flex-1 bg-primary hover:bg-[#0fd630] text-black font-semibold gap-1">
+                                    {submitting ? (
+                                        <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                                    ) : (
+                                        <span className="material-symbols-outlined text-[18px]">check_circle</span>
+                                    )}
+                                    {submitting ? "Saving…" : "Save Tree"}
+                                </Button>
+                            </div>
+                        </form>
+                    )}
                 </aside>
 
                 {/* Sidebar toggle tab — anchored to the right edge, always visible */}
@@ -321,11 +566,45 @@ export default function TreesPage(): React.ReactElement {
                     </span>
                 </button>
 
-                <TreesMapView
-                    trees={filtered}
-                    center={location ?? DEFAULT_CENTER}
-                    onViewChange={handleMapViewChange}
-                />
+                {mode === "browse" ? (
+                    <TreesMapView
+                        trees={filtered}
+                        center={location ?? DEFAULT_CENTER}
+                        onViewChange={handleMapViewChange}
+                    />
+                ) : (
+                    <>
+                        <PickLocationMap
+                            lat={regLat ?? (location?.lat ?? DEFAULT_CENTER.lat)}
+                            lng={regLng ?? (location?.lng ?? DEFAULT_CENTER.lng)}
+                            onLocationChange={handleLocationChange}
+                        />
+                        {/* Map tip toast */}
+                        {showMapTip && (
+                            <div className={`absolute bottom-32 left-1/2 -translate-x-1/2 z-1000 bg-black/80 text-white text-xs font-semibold px-4 py-2.5 rounded-full shadow-lg backdrop-blur-sm pointer-events-none transition-opacity duration-1000 ${mapTipFading ? "opacity-0" : "opacity-100"}`}>
+                                Tap on map to set coordinates
+                            </div>
+                        )}
+                        {/* Coordinate overlay */}
+                        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-1000 bg-white/80 dark:bg-black/80 px-4 py-2 rounded-full backdrop-blur-sm border border-white/20 shadow-lg flex items-center gap-2 pointer-events-none">
+                            <span className="material-symbols-outlined text-primary text-[16px]">location_on</span>
+                            <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+                                {mapPointPicked
+                                    ? `${regLat?.toFixed(5)}, ${regLng?.toFixed(5)} — Tap to move marker`
+                                    : "Tap map to set location"}
+                            </span>
+                        </div>
+                    </>
+                )}
+
+                {/* Nav dropdown backdrop — tap outside to close */}
+                {navOpen && (
+                    <div
+                        className="absolute inset-0 z-999"
+                        onClick={() => setNavOpen(false)}
+                        aria-hidden="true"
+                    />
+                )}
 
                 {/* ── Floating nav ──────────────────────────────────────────────── */}
                 <div className="absolute top-4 right-4 z-1001">
@@ -428,5 +707,17 @@ export default function TreesPage(): React.ReactElement {
                 </div>
             </main>
         </div>
+    );
+}
+
+export default function TreesPage() {
+    return (
+        <Suspense fallback={
+            <div className="w-screen h-screen bg-[#0d1a0f] flex items-center justify-center">
+                <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            </div>
+        }>
+            <TreesPageInner />
+        </Suspense>
     );
 }
