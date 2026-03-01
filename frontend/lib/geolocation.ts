@@ -21,19 +21,50 @@ function fromBrowserGPS(): Promise<GeoLocation> {
 }
 
 async function fromIP(): Promise<GeoLocation> {
-    // ip-api.com — free, no key required
-    const res = await fetch('https://ip-api.com/json/?fields=status,lat,lon,city,country,countryCode', {
-        signal: AbortSignal.timeout(4000),
-    });
-    const data = await res.json();
-    if (data.status !== 'success') throw new Error('IP lookup failed');
-    return {
-        lat: data.lat,
-        lng: data.lon,
-        source: 'ip',
-        city: data.city,
-        country: data.countryCode,
-    };
+    const providers = [
+        async (): Promise<GeoLocation> => {
+            const res = await fetch('https://ipwho.is/', {
+                signal: AbortSignal.timeout(4000),
+            });
+            if (!res.ok) throw new Error('ipwho.is request failed');
+            const data = await res.json();
+            if (!data?.success) throw new Error('ipwho.is lookup failed');
+            return {
+                lat: data.latitude,
+                lng: data.longitude,
+                source: 'ip',
+                city: data.city,
+                country: data.country_code,
+            };
+        },
+        async (): Promise<GeoLocation> => {
+            const res = await fetch('https://ipapi.co/json/', {
+                signal: AbortSignal.timeout(4000),
+            });
+            if (!res.ok) throw new Error('ipapi.co request failed');
+            const data = await res.json();
+            if (data?.error || typeof data?.latitude !== 'number' || typeof data?.longitude !== 'number') {
+                throw new Error('ipapi.co lookup failed');
+            }
+            return {
+                lat: data.latitude,
+                lng: data.longitude,
+                source: 'ip',
+                city: data.city,
+                country: data.country_code,
+            };
+        },
+    ];
+
+    for (const provider of providers) {
+        try {
+            return await provider();
+        } catch {
+            // try next provider
+        }
+    }
+
+    throw new Error('IP lookup failed');
 }
 
 let _cached: GeoLocation | null = null;
