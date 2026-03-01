@@ -478,6 +478,7 @@ function TreesPageInner(): React.ReactElement {
         return window.innerWidth >= 1024;
     });
     const [navOpen, setNavOpen] = useState(false);
+    const [flyToUserKey, setFlyToUserKey] = useState(0);
 
     // ── Register form state ────────────────────────────────────────────────────────────────
     const [regLat, setRegLat] = useState<number | null>(null);
@@ -588,6 +589,23 @@ function TreesPageInner(): React.ReactElement {
             setErrorMsg("");
         });
     }, [startModeTransition]);
+
+    const handleLocateMe = useCallback(async () => {
+        if (locating) return;
+        setLocating(true);
+        try {
+            const loc = await getUserLocation();
+            if (loc) {
+                setLocation(loc);
+                setLocError(false);
+                setFlyToUserKey((k) => k + 1);
+            } else {
+                setLocError(true);
+            }
+        } finally {
+            setLocating(false);
+        }
+    }, [locating]);
 
     const handleLocationChange = useCallback((newLat: number, newLng: number) => {
         setRegLat(newLat);
@@ -753,6 +771,8 @@ function TreesPageInner(): React.ReactElement {
                             trees={filtered}
                             center={location ?? DEFAULT_CENTER}
                             onViewChange={handleMapViewChange}
+                            userLocation={location ?? undefined}
+                            flyToUserKey={flyToUserKey}
                         />
                     </MapErrorBoundary>
                 ) : (
@@ -762,6 +782,7 @@ function TreesPageInner(): React.ReactElement {
                                 lat={regLat ?? (location?.lat ?? DEFAULT_CENTER.lat)}
                                 lng={regLng ?? (location?.lng ?? DEFAULT_CENTER.lng)}
                                 onLocationChange={handleLocationChange}
+                                userLocation={location ?? undefined}
                             />
                         </MapErrorBoundary>
                         <RegisterMapOverlays
@@ -802,6 +823,20 @@ function TreesPageInner(): React.ReactElement {
                         <span className="text-[10px] font-bold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Syncing…</span>
                     </div>
                 )}
+
+                {/* Locate Me button */}
+                <button
+                    onClick={handleLocateMe}
+                    disabled={locating}
+                    title="Center map on my location"
+                    aria-label="Center map on my location"
+                    className="absolute bottom-6 left-4 z-1000 flex items-center justify-center w-10 h-10 rounded-full bg-white/90 dark:bg-[#111812]/90 backdrop-blur-sm border border-gray-200 dark:border-[#2a3f2d] shadow-lg text-slate-700 dark:text-slate-200 hover:text-primary dark:hover:text-primary transition-colors disabled:opacity-50"
+                >
+                    {locating
+                        ? <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                        : <span className="material-symbols-outlined text-[20px]">my_location</span>
+                    }
+                </button>
 
                 {/* Legend */}
                 <div className="absolute bottom-6 right-4 z-1000 bg-white/90 dark:bg-[#1c271d]/90 backdrop-blur-sm p-4 rounded-lg shadow-lg border border-gray-200 dark:border-[#2a3f2d]">

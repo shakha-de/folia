@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import { TreeDto } from "@/lib/api";
@@ -51,6 +51,17 @@ const createColoredIcon = (color: string) =>
         popupAnchor: [0, -14],
     });
 
+const userLocationIcon = L.divIcon({
+    className: "",
+    html: `<div style="position:relative;width:20px;height:20px;display:flex;align-items:center;justify-content:center">
+  <div class="leaflet-user-location-pulse" style="position:absolute;width:20px;height:20px;border-radius:50%;background:rgba(59,130,246,0.5)"></div>
+  <div style="width:12px;height:12px;border-radius:50%;background:#3b82f6;border:2.5px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.3)"></div>
+</div>`,
+    iconSize: [20, 20],
+    iconAnchor: [10, 10],
+    popupAnchor: [0, -10],
+});
+
 function RecenterMap({ lat, lng }: { lat: number; lng: number }) {
     const map = useMap();
     useEffect(() => {
@@ -86,13 +97,26 @@ function MapChangeHandler({ onViewChange }: { onViewChange?: (center: { lat: num
     return null;
 }
 
+function LocateFlyTo({ lat, lng, flyToUserKey }: { lat: number; lng: number; flyToUserKey: number }) {
+    const map = useMap();
+    const prevKeyRef = useRef(flyToUserKey);
+    useEffect(() => {
+        if (flyToUserKey === prevKeyRef.current) return;
+        prevKeyRef.current = flyToUserKey;
+        map.flyTo([lat, lng], Math.max(map.getZoom(), 15), { duration: 1 });
+    }, [flyToUserKey, lat, lng, map]);
+    return null;
+}
+
 interface TreesMapViewProps {
     trees: TreeDto[];
     center: { lat: number; lng: number };
     onViewChange?: (center: { lat: number; lng: number }, radiusMeters: number) => void;
+    userLocation?: { lat: number; lng: number };
+    flyToUserKey?: number;
 }
 
-export default function TreesMapView({ trees, center, onViewChange }: TreesMapViewProps) {
+export default function TreesMapView({ trees, center, onViewChange, userLocation, flyToUserKey = 0 }: TreesMapViewProps) {
     return (
         <MapContainer
             center={[center.lat, center.lng]}
@@ -106,6 +130,14 @@ export default function TreesMapView({ trees, center, onViewChange }: TreesMapVi
             <InvalidateSize />
             <RecenterMap lat={center.lat} lng={center.lng} />
             <MapChangeHandler onViewChange={onViewChange} />
+            {userLocation && (
+                <>
+                    <Marker position={[userLocation.lat, userLocation.lng]} icon={userLocationIcon} zIndexOffset={1000}>
+                        <Popup><span className="text-sm font-semibold">You are here</span></Popup>
+                    </Marker>
+                    <LocateFlyTo lat={userLocation.lat} lng={userLocation.lng} flyToUserKey={flyToUserKey} />
+                </>
+            )}
             {trees.map((tree) => {
                 const color = healthColor[tree.healthStatus] ?? "#94a3b8";
                 return (

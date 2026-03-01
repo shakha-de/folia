@@ -15,6 +15,17 @@ L.Icon.Default.mergeOptions({
     shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
 });
 
+const userLocationIcon = L.divIcon({
+    className: "",
+    html: `<div style="position:relative;width:20px;height:20px;display:flex;align-items:center;justify-content:center">
+  <div class="leaflet-user-location-pulse" style="position:absolute;width:20px;height:20px;border-radius:50%;background:rgba(59,130,246,0.5)"></div>
+  <div style="width:12px;height:12px;border-radius:50%;background:#3b82f6;border:2.5px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.3)"></div>
+</div>`,
+    iconSize: [20, 20],
+    iconAnchor: [10, 10],
+    popupAnchor: [0, -10],
+});
+
 function ClickHandler({ onPick }: { onPick: (lat: number, lng: number) => void }) {
     useMapEvents({
         click(e) {
@@ -38,9 +49,10 @@ interface PickLocationMapProps {
     lat: number;
     lng: number;
     onLocationChange: (lat: number, lng: number) => void;
+    userLocation?: { lat: number; lng: number };
 }
 
-export default function PickLocationMap({ lat, lng, onLocationChange }: PickLocationMapProps) {
+export default function PickLocationMap({ lat, lng, onLocationChange, userLocation }: PickLocationMapProps) {
     const pinIcon = useMemo(() => L.divIcon({
         className: "",
         html: `<div style="display:flex;flex-direction:column;align-items:center">
@@ -71,6 +83,9 @@ export default function PickLocationMap({ lat, lng, onLocationChange }: PickLoca
             <InvalidateSize />
             <ClickHandler onPick={handlePick} />
             <Marker position={[lat, lng]} icon={pinIcon} />
+            {userLocation && (
+                <Marker position={[userLocation.lat, userLocation.lng]} icon={userLocationIcon} zIndexOffset={1000} />
+            )}
         </MapContainer>
     );
 }
