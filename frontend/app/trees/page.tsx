@@ -111,8 +111,22 @@ export default function TreesPage(): React.ReactElement {
     const [search, setSearch] = useState("");
     const [filter, setFilter] = useState<HealthFilter>("ALL");
     const [fetching, setFetching] = useState(false);
-    const [sidebarOpen, setSidebarOpen] = useState(true);
+    const [sidebarOpen, setSidebarOpen] = useState(() => {
+        if (typeof window === "undefined") return true;
+        return window.innerWidth >= 1024;
+    });
     const [navOpen, setNavOpen] = useState(false);
+
+    useEffect(() => {
+        const onResize = () => {
+            if (window.innerWidth >= 1024) {
+                setSidebarOpen(true);
+            }
+        };
+
+        window.addEventListener("resize", onResize);
+        return () => window.removeEventListener("resize", onResize);
+    }, []);
 
     // Track the last view we fetched for to avoid excessive calls
     const lastViewRef = useRef<{ lat: number; lng: number, radius: number } | null>(null);
@@ -202,10 +216,21 @@ export default function TreesPage(): React.ReactElement {
         <div className="bg-background-light dark:bg-background-dark h-screen flex overflow-hidden font-display">
 
             {/* ── Collapsible Sidebar ─────────────────────────────────────────── */}
-            <div className={`relative z-20 shrink-0 transition-all duration-300 ease-in-out ${sidebarOpen ? "w-full md:w-100 lg:w-110" : "w-0"}`}>
+            <div className={`absolute inset-y-0 left-0 z-30 shrink-0 transition-all duration-300 ease-in-out lg:relative lg:z-20 ${sidebarOpen ? "w-[78vw] max-w-[320px] sm:w-[70vw] sm:max-w-sm md:w-96 lg:w-110" : "w-0"}`}>
                 <aside className={`absolute inset-0 flex flex-col bg-white dark:bg-[#111812] border-r border-gray-200 dark:border-[#2a3f2d] z-20 shadow-xl overflow-hidden transition-opacity duration-300 ${sidebarOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}>
                     {/* Header */}
                     <div className="p-5 pb-2 border-b border-gray-100 dark:border-[#1e2f21]">
+                        <div className="flex items-center justify-between mb-3">
+                            <h2 className="text-sm font-bold text-slate-900 dark:text-white tracking-wide">Nearby Trees</h2>
+                            <button
+                                onClick={() => setSidebarOpen(false)}
+                                aria-label="Minimize sidebar"
+                                className="md:hidden flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 dark:bg-[#1c271d] border border-gray-200 dark:border-[#2a3f2d] text-slate-500 dark:text-slate-300"
+                            >
+                                <span className="material-symbols-outlined text-[18px]">close</span>
+                            </button>
+                        </div>
+
                         {/* Location indicator */}
                         <div className="flex items-center gap-2 mb-3 px-1">
                             <span className="material-symbols-outlined text-[16px] text-slate-400">location_on</span>
@@ -276,7 +301,7 @@ export default function TreesPage(): React.ReactElement {
                 <button
                     onClick={() => setSidebarOpen((o) => !o)}
                     aria-label={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
-                    className="absolute top-1/2 -translate-y-1/2 -right-5 z-30 flex items-center justify-center w-5 h-12 rounded-r-lg bg-white dark:bg-[#1c271d] border border-l-0 border-gray-200 dark:border-[#2a3f2d] shadow-md text-slate-400 hover:text-primary transition-colors"
+                    className="hidden md:flex absolute top-1/2 -translate-y-1/2 -right-5 z-30 items-center justify-center w-5 h-12 rounded-r-lg bg-white dark:bg-[#1c271d] border border-l-0 border-gray-200 dark:border-[#2a3f2d] shadow-md text-slate-400 hover:text-primary transition-colors"
                 >
                     <span className="material-symbols-outlined text-[16px]">
                         {sidebarOpen ? "chevron_left" : "chevron_right"}
@@ -286,6 +311,16 @@ export default function TreesPage(): React.ReactElement {
 
             {/* ── Map ─────────────────────────────────────────────────────────── */}
             <main className="flex-1 min-h-0 relative z-0 overflow-hidden">
+                <button
+                    onClick={() => setSidebarOpen((o) => !o)}
+                    aria-label={sidebarOpen ? "Hide tree list" : "Show tree list"}
+                    className="md:hidden absolute top-20 left-4 z-1001 flex items-center justify-center w-10 h-10 rounded-full bg-white/90 dark:bg-[#111812]/90 backdrop-blur-sm border border-gray-200 dark:border-[#2a3f2d] shadow-lg text-slate-700 dark:text-slate-200"
+                >
+                    <span className="material-symbols-outlined text-[20px]">
+                        {sidebarOpen ? "close" : "menu"}
+                    </span>
+                </button>
+
                 <TreesMapView
                     trees={filtered}
                     center={location ?? DEFAULT_CENTER}
@@ -308,10 +343,6 @@ export default function TreesPage(): React.ReactElement {
                             <Link href="/almanac" className="text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary px-2 py-1 rounded-full transition-colors">Almanac</Link>
                             <Link href="/learn-more" className="text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary px-2 py-1 rounded-full transition-colors">Learn More</Link>
                         </div>
-
-                        <div className="hidden md:block w-px h-4 bg-gray-200 dark:bg-[#2a3f2d]" />
-
-                        <ThemeToggle />
 
                         <div className="w-px h-4 bg-gray-200 dark:bg-[#2a3f2d]" />
 
@@ -337,6 +368,10 @@ export default function TreesPage(): React.ReactElement {
                             <div className="px-4 py-3 border-b border-gray-100 dark:border-[#1e2f21]">
                                 <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">Signed in as</p>
                                 <p className="text-sm font-bold text-slate-800 dark:text-white truncate">{user?.username}</p>
+                            </div>
+                            <div className="px-4 py-3 border-b border-gray-100 dark:border-[#1e2f21] flex items-center justify-between">
+                                <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Theme</p>
+                                <ThemeToggle />
                             </div>
                             {isAuthenticated && (
                                 <button

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -15,7 +15,6 @@ import { getUserLocation } from "@/lib/geolocation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
 
 const PickLocationMap = dynamic(() => import("@/components/maps/PickLocationMap"), {
     ssr: false,
@@ -32,7 +31,6 @@ const SPECIES_OPTIONS = [
     { value: "Populus alba", label: "White Poplar (Populus alba)" },
     { value: "Platanus × acerifolia", label: "London Plane (Platanus × acerifolia)" },
     { value: "Fraxinus sogdiana", label: "Desert Ash (Fraxinus sogdiana)" },
-    { value: "other", label: "Other / Unknown" },
 ];
 
 const MOISTURE_OPTIONS: { value: SoilMoistureLevel; label: string; icon: string }[] = [
@@ -52,8 +50,22 @@ export default function RegisterTreePage(): React.ReactElement {
     const router = useRouter();
 
     // UI
-    const [sidebarOpen, setSidebarOpen] = useState(true);
+    const [sidebarOpen, setSidebarOpen] = useState(() => {
+        if (typeof window === "undefined") return true;
+        return window.innerWidth >= 1024;
+    });
     const [navOpen, setNavOpen] = useState(false);
+
+    useEffect(() => {
+        const onResize = () => {
+            if (window.innerWidth >= 1024) {
+                setSidebarOpen(true);
+            }
+        };
+
+        window.addEventListener("resize", onResize);
+        return () => window.removeEventListener("resize", onResize);
+    }, []);
 
     // Location
     const [lat, setLat] = useState<number | null>(null);
@@ -78,6 +90,28 @@ export default function RegisterTreePage(): React.ReactElement {
     const [submitting, setSubmitting] = useState(false);
     const [successMsg, setSuccessMsg] = useState("");
     const [errorMsg, setErrorMsg] = useState("");
+    const [mapPointPicked, setMapPointPicked] = useState(false);
+    const [speciesFocused, setSpeciesFocused] = useState(false);
+    const [showMapTip, setShowMapTip] = useState(true);
+
+    useEffect(() => {
+        const timeout = window.setTimeout(() => {
+            setShowMapTip(false);
+        }, 3500);
+
+        return () => window.clearTimeout(timeout);
+    }, []);
+
+    const speciesSuggestions = useMemo(() => {
+        const query = species.trim().toLowerCase();
+        if (!query) return SPECIES_OPTIONS.slice(0, 5);
+        return SPECIES_OPTIONS
+            .filter((option) =>
+                option.value.toLowerCase().includes(query) ||
+                option.label.toLowerCase().includes(query)
+            )
+            .slice(0, 6);
+    }, [species]);
 
     useEffect(() => {
         if (!loading && !user) {
@@ -88,6 +122,10 @@ export default function RegisterTreePage(): React.ReactElement {
     const handleLocationChange = useCallback((newLat: number, newLng: number) => {
         setLat(newLat);
         setLng(newLng);
+        setMapPointPicked(true);
+        if (window.innerWidth < 1024) {
+            setSidebarOpen(true);
+        }
     }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -100,11 +138,13 @@ export default function RegisterTreePage(): React.ReactElement {
         setErrorMsg("");
         setSuccessMsg("");
 
-        const finalSpecies = species === "other" ? commonName || "Unknown" : species;
+        const normalizedSpecies = species.trim();
+        const normalizedCommonName = commonName.trim();
+        const finalSpecies = normalizedSpecies || normalizedCommonName || "Unknown";
 
         const result = await createTree({
             species: finalSpecies,
-            commonName: commonName || finalSpecies,
+            commonName: normalizedCommonName || finalSpecies,
             lat,
             lng,
             soilMoistureLevel: soilMoisture,
@@ -132,12 +172,18 @@ export default function RegisterTreePage(): React.ReactElement {
         <div className="flex h-screen w-full bg-background-light dark:bg-background-dark font-display overflow-hidden">
 
             {/* ── Collapsible Form Sidebar (LEFT) ─────────────────────────────── */}
-            <div className={`relative z-20 shrink-0 transition-all duration-300 ease-in-out ${sidebarOpen ? "w-full lg:w-120" : "w-0"}`}>
+            <div className={`absolute inset-y-0 left-0 z-30 shrink-0 transition-all duration-300 ease-in-out lg:relative lg:z-20 ${sidebarOpen ? "w-full max-w-none sm:w-[70vw] sm:max-w-sm md:w-96 lg:w-120" : "w-0"}`}>
                 <aside className={`absolute inset-0 flex flex-col bg-white dark:bg-[#111812] border-r border-gray-200 dark:border-[#28392b] z-20 shadow-2xl overflow-hidden transition-opacity duration-300 ${sidebarOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}>
                     {/* Header */}
                     <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100 dark:border-[#28392b] bg-white dark:bg-[#111812] shrink-0">
                         <button
-                            onClick={() => router.back()}
+                            onClick={() => {
+                                if (window.innerWidth < 1024) {
+                                    setSidebarOpen(false);
+                                    return;
+                                }
+                                router.back();
+                            }}
                             className="text-slate-400 hover:text-slate-700 dark:hover:text-white transition"
                         >
                             <span className="material-symbols-outlined">close</span>
@@ -145,15 +191,14 @@ export default function RegisterTreePage(): React.ReactElement {
                         <h2 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">Register New Tree</h2>
                     </div>
 
-                    {/* Mobile map hint */}
-                    <div className="lg:hidden mx-6 mt-4 bg-gray-100 dark:bg-[#1c271d] rounded-lg p-3 border border-gray-200 dark:border-[#28392b] shrink-0">
-                        <p className="text-xs text-slate-500 dark:text-slate-400">
-                            GPS coordinates auto-set. Open on a larger screen to pick from map.
-                        </p>
-                    </div>
-
                     {/* Scrollable form */}
                     <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-8">
+                        {mapPointPicked && (
+                            <div className="rounded-lg border border-primary/30 bg-primary/10 px-3 py-2 text-xs font-medium text-slate-700 dark:text-slate-200">
+                                Location selected from map. Review details and submit registration.
+                            </div>
+                        )}
+
                         {/* Location */}
                         <section className="flex flex-col gap-4">
                             <div className="flex items-center justify-between border-b border-gray-100 dark:border-[#28392b] pb-2">
@@ -194,11 +239,38 @@ export default function RegisterTreePage(): React.ReactElement {
                             </div>
                             <div>
                                 <Label className="block mb-1.5 text-slate-700 dark:text-slate-300">Species</Label>
-                                <Select value={species} onChange={(e) => setSpecies(e.target.value)}>
-                                    {SPECIES_OPTIONS.map((o) => (
-                                        <option key={o.value} value={o.value}>{o.label}</option>
-                                    ))}
-                                </Select>
+                                <div className="relative">
+                                    <Input
+                                        type="text"
+                                        value={species}
+                                        onChange={(e) => setSpecies(e.target.value)}
+                                        onFocus={() => setSpeciesFocused(true)}
+                                        onBlur={() => setTimeout(() => setSpeciesFocused(false), 120)}
+                                        placeholder="Type species or choose suggestion"
+                                        className="bg-gray-50 dark:bg-[#1c271d] border-gray-200 dark:border-[#28392b] text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 focus:border-primary"
+                                    />
+                                    {speciesFocused && speciesSuggestions.length > 0 && (
+                                        <div className="absolute z-30 mt-1 w-full rounded-lg border border-gray-200 dark:border-[#28392b] bg-white dark:bg-[#111812] shadow-lg overflow-hidden">
+                                            {speciesSuggestions.map((option) => (
+                                                <button
+                                                    key={option.value}
+                                                    type="button"
+                                                    onMouseDown={(e) => {
+                                                        e.preventDefault();
+                                                        setSpecies(option.value);
+                                                        setSpeciesFocused(false);
+                                                    }}
+                                                    className="w-full text-left px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-[#1c271d]"
+                                                >
+                                                    {option.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                                <p className="mt-1 text-[11px] text-slate-400 dark:text-slate-500">
+                                    Free text is allowed. Matching known species appear as suggestions.
+                                </p>
                             </div>
                             <div>
                                 <Label className="block mb-1.5 text-slate-700 dark:text-slate-300">
@@ -306,7 +378,7 @@ export default function RegisterTreePage(): React.ReactElement {
                 <button
                     onClick={() => setSidebarOpen((o) => !o)}
                     aria-label={sidebarOpen ? "Collapse form" : "Expand form"}
-                    className="absolute top-1/2 -translate-y-1/2 -right-5 z-30 flex items-center justify-center w-5 h-12 rounded-r-lg bg-white dark:bg-[#1c271d] border border-l-0 border-gray-200 dark:border-[#28392b] shadow-md text-slate-400 hover:text-primary transition-colors"
+                    className="hidden md:flex absolute top-1/2 -translate-y-1/2 -right-5 z-30 items-center justify-center w-5 h-12 rounded-r-lg bg-white dark:bg-[#1c271d] border border-l-0 border-gray-200 dark:border-[#28392b] shadow-md text-slate-400 hover:text-primary transition-colors"
                 >
                     <span className="material-symbols-outlined text-[16px]">
                         {sidebarOpen ? "chevron_left" : "chevron_right"}
@@ -316,6 +388,16 @@ export default function RegisterTreePage(): React.ReactElement {
 
             {/* ── Map (RIGHT) ──────────────────────────────────────────────────── */}
             <main className="flex-1 min-h-0 relative z-0 overflow-hidden">
+                <button
+                    onClick={() => setSidebarOpen((o) => !o)}
+                    aria-label={sidebarOpen ? "Hide registration form" : "Show registration form"}
+                    className="md:hidden absolute top-20 left-4 z-1001 flex items-center justify-center w-10 h-10 rounded-full bg-white/90 dark:bg-[#111812]/90 backdrop-blur-sm border border-gray-200 dark:border-[#2a3f2d] shadow-lg text-slate-700 dark:text-slate-200"
+                >
+                    <span className="material-symbols-outlined text-[20px]">
+                        {sidebarOpen ? "close" : "menu"}
+                    </span>
+                </button>
+
                 {lat !== null && lng !== null ? (
                     <PickLocationMap lat={lat} lng={lng} onLocationChange={handleLocationChange} />
                 ) : (
@@ -324,6 +406,17 @@ export default function RegisterTreePage(): React.ReactElement {
                         <p className="text-slate-400 text-sm">
                             {geoLocating ? 'Detecting location…' : 'Location unavailable — enter coordinates in the form.'}
                         </p>
+                    </div>
+                )}
+
+                {showMapTip && (
+                    <div className="absolute top-16 left-1/2 -translate-x-1/2 z-1000 pointer-events-none">
+                        <div className="bg-white/90 dark:bg-[#111812]/90 backdrop-blur-sm px-4 py-2 rounded-full border border-gray-200 dark:border-[#28392b] shadow-lg flex items-center gap-2">
+                            <span className="material-symbols-outlined text-primary text-[16px]">touch_app</span>
+                            <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+                                Tap on the map to set coordinates
+                            </span>
+                        </div>
                     </div>
                 )}
 
@@ -360,10 +453,6 @@ export default function RegisterTreePage(): React.ReactElement {
                             <Link href="/learn-more" className="text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary px-2 py-1 rounded-full transition-colors">Learn More</Link>
                         </div>
 
-                        <div className="hidden md:block w-px h-4 bg-gray-200 dark:bg-[#2a3f2d]" />
-
-                        <ThemeToggle />
-
                         <div className="w-px h-4 bg-gray-200 dark:bg-[#2a3f2d]" />
 
                         <button
@@ -387,6 +476,10 @@ export default function RegisterTreePage(): React.ReactElement {
                             <div className="px-4 py-3 border-b border-gray-100 dark:border-[#1e2f21]">
                                 <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">Signed in as</p>
                                 <p className="text-sm font-bold text-slate-800 dark:text-white truncate">{user?.username}</p>
+                            </div>
+                            <div className="px-4 py-3 border-b border-gray-100 dark:border-[#1e2f21] flex items-center justify-between">
+                                <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Theme</p>
+                                <ThemeToggle />
                             </div>
                             {isAuthenticated && (
                                 <button

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { fetchNearbyTrees, fetchTreeStats, TreeDto, TreeStats } from '@/lib/api';
+import { fetchMyTrees, fetchTreeStats, TreeDto, TreeStats } from '@/lib/api';
 import { getUserLocation } from '@/lib/geolocation';
 import { getGamificationForUser, MOCK_LEADERBOARD } from '@/lib/mock';
 import ProfileSection from '@/components/dashboard/ProfileSection';
@@ -17,7 +17,7 @@ import { useRouter } from 'next/navigation';
 export default function Dashboard() {
     const { user, loading } = useAuth();
     const router = useRouter();
-    const [nearbyTrees, setNearbyTrees] = useState<TreeDto[]>([]);
+    const [myTrees, setMyTrees] = useState<TreeDto[]>([]);
     const [stats, setStats] = useState<TreeStats | null>(null);
 
     useEffect(() => {
@@ -29,13 +29,16 @@ export default function Dashboard() {
     useEffect(() => {
         if (!user) return;
         const loadData = async () => {
+            const trees = await fetchMyTrees();
+            setMyTrees(trees);
+
             const loc = await getUserLocation();
-            if (!loc) return; // location unavailable, skip tree fetch
-            const [trees, treeStats] = await Promise.all([
-                fetchNearbyTrees(loc.lat, loc.lng, 20000),
-                fetchTreeStats(loc.lat, loc.lng, 20000),
-            ]);
-            setNearbyTrees(trees);
+            if (!loc) {
+                setStats(null);
+                return;
+            }
+
+            const treeStats = await fetchTreeStats(loc.lat, loc.lng, 20000);
             setStats(treeStats);
         };
         loadData();
@@ -63,7 +66,7 @@ export default function Dashboard() {
                 {/* Main Dashboard Content */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Left Column: My Urban Forest (Tree List) */}
-                    <TreeList trees={nearbyTrees} />
+                    <TreeList trees={myTrees} />
 
                     {/* Right Column: Gamification & Community */}
                     <GamificationWidgets gamification={gamification} leaderboard={MOCK_LEADERBOARD} />

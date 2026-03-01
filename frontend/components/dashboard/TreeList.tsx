@@ -21,7 +21,7 @@ export default function TreeList({ trees }: TreeListProps) {
             </div>
             {trees.length === 0 ? (
                 <div className="text-center p-8 text-slate-600 dark:text-slate-300">
-                    No trees found nearby. Plant one!
+                    You haven&apos;t registered any trees yet. Plant one!
                 </div>
             ) : (
                 trees.map((tree) => (

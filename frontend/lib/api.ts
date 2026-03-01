@@ -77,6 +77,16 @@ export const fetchNearbyTrees = async (lat: number, lng: number, radiusMeters: n
     }
 };
 
+export const fetchMyTrees = async (): Promise<TreeDto[]> => {
+    try {
+        const response = await api.get<ApiResponse<TreeDto[]>>('/trees');
+        return response.data.data;
+    } catch (error) {
+        console.error("Error fetching my trees:", error);
+        return [];
+    }
+};
+
 export const fetchTreeStats = async (lat: number, lng: number, radiusMeters: number = 5000): Promise<TreeStats | null> => {
     try {
         const response = await api.get<ApiResponse<TreeStats>>('/trees/stats', {
