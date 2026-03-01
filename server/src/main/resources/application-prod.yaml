@@ -52,6 +52,8 @@ spring:
       force-response: true
 
 application:
+  cors:
+    allowed-origins: "${CORS_ALLOWED_ORIGINS:http://localhost:3000}"
   security:
     jwt:
       secret-key: "${JWT_SECRET}"
