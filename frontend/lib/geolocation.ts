@@ -68,26 +68,35 @@ async function fromIP(): Promise<GeoLocation> {
 }
 
 let _cached: GeoLocation | null = null;
+// Caches the in-flight promise so concurrent callers share one GPS/IP lookup
+// instead of each spawning their own.
+let _inflight: Promise<GeoLocation | null> | null = null;
 
 /**
  * Returns an estimated user location, or null if both GPS and IP lookup fail.
  * Priority: browser GPS → IP geolocation.
- * Result is cached for the session.
+ * Result cached after first resolution; concurrent calls share a single lookup.
  */
-export async function getUserLocation(): Promise<GeoLocation | null> {
-    if (_cached) return _cached;
-    try {
-        _cached = await fromBrowserGPS();
-        return _cached;
-    } catch {
-        // GPS denied or timed out — try IP
-    }
-    try {
-        _cached = await fromIP();
-        return _cached;
-    } catch {
-        // Both failed
-    }
-    return null;
+export function getUserLocation(): Promise<GeoLocation | null> {
+    if (_cached) return Promise.resolve(_cached);
+    if (_inflight) return _inflight;
+
+    _inflight = (async () => {
+        try {
+            _cached = await fromBrowserGPS();
+            return _cached;
+        } catch {
+            // GPS denied or timed out — try IP
+        }
+        try {
+            _cached = await fromIP();
+            return _cached;
+        } catch {
+            // Both failed
+        }
+        return null;
+    })().finally(() => { _inflight = null; });
+
+    return _inflight;
 }
 

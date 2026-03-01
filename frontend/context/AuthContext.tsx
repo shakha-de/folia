@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import api, { ApiResponse, UserDto } from "@/lib/api";
+import api, { ApiResponse, UserDto, setAccessToken } from "@/lib/api";
 
 interface User {
     uuid: string;
@@ -63,7 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // A valid JWT always has exactly 2 period characters (header.payload.signature).
         const storedToken = localStorage.getItem("accessToken");
         if (storedToken && (storedToken.match(/\./g) || []).length !== 2) {
-            localStorage.removeItem("accessToken");
+            setAccessToken(null);
             localStorage.removeItem("refreshToken");
             localStorage.removeItem("user");
             // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -100,7 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             };
 
             // Set mock tokens and user data
-            localStorage.setItem("accessToken", "mock-access-token");
+            setAccessToken("mock-access-token");
             localStorage.setItem("refreshToken", "mock-refresh-token");
             localStorage.setItem("user", JSON.stringify(mockUser));
 
@@ -113,7 +113,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const response = await api.post<ApiResponse<AuthResponse>>("/auth/login", credentials);
             const { token, refreshToken, user: userData } = response.data.data;
 
-            localStorage.setItem("accessToken", token);
+            setAccessToken(token);
             localStorage.setItem("refreshToken", refreshToken);
             localStorage.setItem("user", JSON.stringify(userData));
 
@@ -139,7 +139,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 email: data.email,
             };
 
-            localStorage.setItem("accessToken", "mock-access-token");
+            setAccessToken("mock-access-token");
             localStorage.setItem("refreshToken", "mock-refresh-token");
             localStorage.setItem("user", JSON.stringify(mockUser));
 
@@ -153,7 +153,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
             if (response.data.data?.token) {
                 const { token, refreshToken, user: userData } = response.data.data;
-                localStorage.setItem("accessToken", token);
+                setAccessToken(token);
                 localStorage.setItem("refreshToken", refreshToken);
                 localStorage.setItem("user", JSON.stringify(userData));
                 setUser(userData);
@@ -168,7 +168,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             console.log("🎭 Mock logout");
         }
 
-        localStorage.removeItem("accessToken");
+        setAccessToken(null);
         localStorage.removeItem("refreshToken");
         localStorage.removeItem("user");
         setUser(null);

@@ -4,6 +4,22 @@ const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 const normalizedApiUrl = rawApiUrl.endsWith('/') ? rawApiUrl.slice(0, -1) : rawApiUrl;
 const API_URL = normalizedApiUrl.endsWith('/api') ? normalizedApiUrl : `${normalizedApiUrl}/api`;
 
+// ─── Module-level token cache ─────────────────────────────────────────────────
+// Avoids a localStorage read on every outgoing request; kept in sync by
+// setAccessToken(), which is the single write point for the access token.
+let _accessToken: string | null =
+    typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+
+export function setAccessToken(token: string | null): void {
+    _accessToken = token;
+    if (typeof window === 'undefined') return;
+    if (token === null) {
+        localStorage.removeItem('accessToken');
+    } else {
+        localStorage.setItem('accessToken', token);
+    }
+}
+
 const api = axios.create({
     baseURL: API_URL,
     headers: {
@@ -11,17 +27,93 @@ const api = axios.create({
     },
 });
 
-// Automatically attach Bearer token from localStorage on every request
+// Automatically attach Bearer token on every request (reads from module cache)
 api.interceptors.request.use((config) => {
-    if (typeof window !== 'undefined') {
-        const token = localStorage.getItem('accessToken');
-        if (token) {
-            config.headers = config.headers ?? {};
-            config.headers['Authorization'] = `Bearer ${token}`;
-        }
+    if (_accessToken) {
+        config.headers = config.headers ?? {};
+        config.headers['Authorization'] = `Bearer ${_accessToken}`;
     }
     return config;
 });
+
+// ─── 401 → silent token refresh ──────────────────────────────────────────────
+// If multiple requests fail with 401 simultaneously only one refresh call is
+// made; the rest are queued and replayed once the new token arrives.
+let isRefreshing = false;
+let refreshQueue: Array<(token: string) => void> = [];
+
+function flushRefreshQueue(token: string) {
+    refreshQueue.forEach(cb => cb(token));
+    refreshQueue = [];
+}
+
+function clearAuthAndRedirect() {
+    if (typeof window === 'undefined') return;
+    setAccessToken(null);
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('user');
+    window.location.replace('/login');
+}
+
+api.interceptors.response.use(
+    res => res,
+    async error => {
+        const original = error.config;
+
+        // Only intercept 401s; skip auth endpoints and already-retried requests
+        if (
+            error.response?.status !== 401 ||
+            original._retry ||
+            original.url?.includes('/auth/')
+        ) {
+            return Promise.reject(error);
+        }
+
+        original._retry = true;
+
+        const storedRefreshToken =
+            typeof window !== 'undefined' ? localStorage.getItem('refreshToken') : null;
+
+        if (!storedRefreshToken) {
+            clearAuthAndRedirect();
+            return Promise.reject(error);
+        }
+
+        if (isRefreshing) {
+            // Another refresh is already in flight — queue and replay when done
+            return new Promise<string>(resolve => { refreshQueue.push(resolve); })
+                .then(newToken => {
+                    original.headers['Authorization'] = `Bearer ${newToken}`;
+                    return api(original);
+                });
+        }
+
+        isRefreshing = true;
+
+        try {
+            const { data } = await axios.post<ApiResponse<{ token: string; refreshToken: string; user: UserDto }>>(
+                `${API_URL}/auth/refresh-token`,
+                { refreshToken: storedRefreshToken },
+            );
+            const { token: newToken, refreshToken: newRefreshToken, user: newUser } = data.data;
+
+            setAccessToken(newToken);
+            localStorage.setItem('refreshToken', newRefreshToken);
+            localStorage.setItem('user', JSON.stringify(newUser));
+
+            flushRefreshQueue(newToken);
+            isRefreshing = false;
+
+            original.headers['Authorization'] = `Bearer ${newToken}`;
+            return api(original);
+        } catch {
+            isRefreshing = false;
+            refreshQueue = [];
+            clearAuthAndRedirect();
+            return Promise.reject(error);
+        }
+    },
+);
 
 // Unified API Response structure
 export interface ApiResponse<T> {
@@ -65,13 +157,15 @@ export interface UserDto {
     enabled: boolean;
 }
 
-export const fetchNearbyTrees = async (lat: number, lng: number, radiusMeters: number = 250): Promise<TreeDto[]> => {
+export const fetchNearbyTrees = async (lat: number, lng: number, radiusMeters: number = 250, signal?: AbortSignal): Promise<TreeDto[]> => {
     try {
         const response = await api.get<ApiResponse<TreeDto[]>>('/trees/nearby', {
             params: { lat, lng, radiusMeters },
+            signal,
         });
         return response.data.data;
     } catch (error) {
+        if ((error as { name?: string }).name === 'CanceledError' || (error as { name?: string }).name === 'AbortError') return [];
         console.error("Error fetching nearby trees:", error);
         return [];
     }
@@ -87,13 +181,15 @@ export const fetchMyTrees = async (): Promise<TreeDto[]> => {
     }
 };
 
-export const fetchTreeStats = async (lat: number, lng: number, radiusMeters: number = 5000): Promise<TreeStats | null> => {
+export const fetchTreeStats = async (lat: number, lng: number, radiusMeters: number = 5000, signal?: AbortSignal): Promise<TreeStats | null> => {
     try {
         const response = await api.get<ApiResponse<TreeStats>>('/trees/stats', {
             params: { lat, lng, radiusMeters },
+            signal,
         });
         return response.data.data;
     } catch (error) {
+        if ((error as { name?: string }).name === 'CanceledError' || (error as { name?: string }).name === 'AbortError') return null;
         console.error("Error fetching tree stats:", error);
         return null;
     }

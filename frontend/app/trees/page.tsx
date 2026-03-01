@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo, useCallback, useRef, Suspense } from "react";
+import React, { useEffect, useState, useMemo, useCallback, useRef, Suspense, useTransition } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -21,6 +21,37 @@ function MapLoader() {
             </div>
         </div>
     );
+}
+
+interface MapErrorBoundaryState { hasError: boolean; }
+class MapErrorBoundary extends React.Component<{ children: React.ReactNode }, MapErrorBoundaryState> {
+    constructor(props: { children: React.ReactNode }) {
+        super(props);
+        this.state = { hasError: false };
+    }
+    static getDerivedStateFromError(): MapErrorBoundaryState {
+        return { hasError: true };
+    }
+    componentDidCatch(error: Error, info: React.ErrorInfo) {
+        console.error("[MapErrorBoundary]", error, info);
+    }
+    render() {
+        if (this.state.hasError) {
+            return (
+                <div className="w-full h-full flex flex-col items-center justify-center bg-[#0d1a0f] gap-3">
+                    <span className="material-symbols-outlined text-4xl text-slate-500">map_off</span>
+                    <p className="text-slate-400 text-sm">Map failed to load.</p>
+                    <button
+                        onClick={() => this.setState({ hasError: false })}
+                        className="text-xs text-primary underline hover:no-underline"
+                    >
+                        Retry
+                    </button>
+                </div>
+            );
+        }
+        return this.props.children;
+    }
 }
 
 const TreesMapView = dynamic(() => import("@/components/maps/TreesMapView"), {
@@ -75,6 +106,296 @@ const filterLabels: { key: HealthFilter; label: string }[] = [
     { key: "STRESSED", label: "Needs Water" },
     { key: "HEALTHY", label: "Healthy" },
 ];
+
+// ── Module-level pure helpers (no complexity budget charged to callers) ──────
+
+function hasMovedSignificantly(
+    last: { lat: number; lng: number; radius: number },
+    center: { lat: number; lng: number },
+    radius: number,
+): boolean {
+    const movedMeters = Math.max(Math.abs(last.lat - center.lat), Math.abs(last.lng - center.lng)) * 111_000;
+    return movedMeters >= radius * 0.2 || Math.abs(last.radius - radius) >= last.radius * 0.3;
+}
+
+function matchesTree(tree: TreeDto, filter: HealthFilter, search: string): boolean {
+    if (filter !== "ALL" && tree.healthStatus !== filter) return false;
+    const q = search.toLowerCase();
+    return !q || tree.species.toLowerCase().includes(q) || (tree.commonName ?? "").toLowerCase().includes(q);
+}
+
+// ── Extracted sub-components (each has its own complexity budget) ─────────────
+
+const BrowseSidebar = React.memo(function BrowseSidebar({
+    stats, filtered, filter, setFilter, search, setSearch,
+    locating, locError, location, onRegister, onClose,
+}: {
+    stats: TreeStats | null;
+    filtered: TreeDto[];
+    filter: HealthFilter;
+    setFilter: (f: HealthFilter) => void;
+    search: string;
+    setSearch: (s: string) => void;
+    locating: boolean;
+    locError: boolean;
+    location: GeoLocation | null;
+    onRegister: () => void;
+    onClose: () => void;
+}): React.ReactElement {
+    return (
+        <>
+            <div className="p-5 pb-2 border-b border-gray-100 dark:border-[#1e2f21]">
+                <div className="flex items-center justify-between mb-3">
+                    <h2 className="text-sm font-bold text-slate-900 dark:text-white tracking-wide">Nearby Trees</h2>
+                    <button onClick={onClose} aria-label="Minimize sidebar" className="md:hidden flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 dark:bg-[#1c271d] border border-gray-200 dark:border-[#2a3f2d] text-slate-500 dark:text-slate-300">
+                        <span className="material-symbols-outlined text-[18px]">close</span>
+                    </button>
+                </div>
+                <div className="flex items-center gap-2 mb-3 px-1">
+                    <span className="material-symbols-outlined text-[16px] text-slate-400">location_on</span>
+                    <LocationLabel locating={locating} locError={locError} location={location} />
+                </div>
+                <div className="relative mb-3">
+                    <span className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                        <span className="material-symbols-outlined text-slate-400 text-[20px]">search</span>
+                    </span>
+                    <input
+                        type="text" value={search} onChange={(e) => setSearch(e.target.value)}
+                        placeholder="Search trees or species…"
+                        className="w-full pl-10 pr-3 py-2.5 rounded-lg bg-gray-100 dark:bg-[#1c271d] border-none text-sm text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    />
+                </div>
+                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                    {filterLabels.map(({ key, label }) => (
+                        <button key={key} onClick={() => setFilter(key)}
+                            className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
+                                filter === key ? "bg-primary text-black" : "bg-gray-100 dark:bg-[#1c271d] border border-transparent dark:border-[#2f4532] text-slate-600 dark:text-slate-400 hover:bg-gray-200 dark:hover:bg-[#2f4532]"
+                            }`}
+                        >
+                            {key === "DYING" && <span className="w-2 h-2 rounded-full bg-red-500 inline-block" />}
+                            {key === "STRESSED" && <span className="w-2 h-2 rounded-full bg-yellow-400 inline-block" />}
+                            {label}
+                        </button>
+                    ))}
+                </div>
+            </div>
+            {stats && <StatsPill stats={stats} />}
+            <div className="flex-1 overflow-y-auto p-5 pt-2 space-y-3">
+                {filtered.length === 0
+                    ? <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-8">No trees found.</p>
+                    : filtered.map((tree) => <TreeCard key={tree.publicId} tree={tree} />)
+                }
+            </div>
+            <div className="p-5 border-t border-gray-100 dark:border-[#1e2f21] bg-white dark:bg-[#111812]">
+                <Button onClick={onRegister} className="w-full bg-primary hover:bg-[#0fd630] text-black font-semibold py-3 rounded-lg gap-2">
+                    <span className="material-symbols-outlined text-[20px]">add_circle</span>
+                    Register New Tree
+                </Button>
+            </div>
+        </>
+    );
+});
+
+const RegisterSidebar = React.memo(function RegisterSidebar({
+    species, setSpecies, speciesFocused, setSpeciesFocused, speciesSuggestions,
+    commonName, setCommonName, soilMoisture, setSoilMoisture, healthStatus, setHealthStatus,
+    submitting, errorMsg, successMsg, mapPointPicked, regLat, regLng,
+    onSubmit, onBack, onClose,
+}: {
+    species: string; setSpecies: (s: string) => void;
+    speciesFocused: boolean; setSpeciesFocused: (b: boolean) => void;
+    speciesSuggestions: { value: string; label: string }[];
+    commonName: string; setCommonName: (s: string) => void;
+    soilMoisture: SoilMoistureLevel; setSoilMoisture: (m: SoilMoistureLevel) => void;
+    healthStatus: HealthStatus; setHealthStatus: (h: HealthStatus) => void;
+    submitting: boolean; errorMsg: string; successMsg: string;
+    mapPointPicked: boolean; regLat: number | null; regLng: number | null;
+    onSubmit: (e: React.FormEvent) => void;
+    onBack: () => void; onClose: () => void;
+}): React.ReactElement {
+    return (
+        <>
+            <div className="p-5 pb-2 border-b border-gray-100 dark:border-[#1e2f21]">
+                <div className="flex items-center justify-between mb-3">
+                    <button onClick={onBack} className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors">
+                        <span className="material-symbols-outlined text-[16px]">arrow_back</span>
+                        Back
+                    </button>
+                    <h2 className="text-sm font-bold text-slate-900 dark:text-white tracking-wide">Register Tree</h2>
+                    <button onClick={onClose} aria-label="Minimize sidebar" className="md:hidden flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 dark:bg-[#1c271d] border border-gray-200 dark:border-[#2a3f2d] text-slate-500 dark:text-slate-300">
+                        <span className="material-symbols-outlined text-[18px]">close</span>
+                    </button>
+                </div>
+                <div className="flex items-center gap-2 px-1 pb-2">
+                    <span className={`w-2.5 h-2.5 rounded-full ${mapPointPicked ? "bg-primary" : "bg-slate-400"}`} />
+                    <span className="text-xs text-slate-500 dark:text-slate-400">
+                        {mapPointPicked ? `${regLat?.toFixed(5)}, ${regLng?.toFixed(5)}` : "Tap map to set location"}
+                    </span>
+                </div>
+            </div>
+            <form onSubmit={onSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+                <div className="flex-1 overflow-y-auto p-5 space-y-5">
+                    {errorMsg && <div className="text-xs text-red-500 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2">{errorMsg}</div>}
+                    {successMsg && <div className="text-xs text-primary bg-primary/10 border border-primary/30 rounded-lg px-3 py-2">{successMsg}</div>}
+                    <div className="relative space-y-1.5">
+                        <Label htmlFor="species" className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Species</Label>
+                        <div className="relative">
+                            <Input
+                                id="species" value={species}
+                                onChange={(e) => setSpecies(e.target.value)}
+                                onFocus={() => setSpeciesFocused(true)}
+                                onBlur={() => setTimeout(() => setSpeciesFocused(false), 200)}
+                                placeholder="Start typing…" autoComplete="off"
+                                className="w-full text-sm bg-white dark:bg-[#1c271d] border-gray-200 dark:border-[#2a3f2d] text-slate-900 dark:text-white placeholder-slate-400"
+                            />
+                            {speciesFocused && speciesSuggestions.length > 0 && (
+                                <ul className="absolute left-0 right-0 top-full mt-1 z-50 bg-white dark:bg-[#1c271d] border border-gray-200 dark:border-[#2a3f2d] rounded-lg overflow-hidden shadow-lg max-h-48 overflow-y-auto">
+                                    {speciesSuggestions.map((s) => (
+                                        <li key={s.value}
+                                            onPointerDown={(e) => { e.preventDefault(); setSpecies(s.value); setSpeciesFocused(false); }}
+                                            className="px-4 py-2.5 text-sm text-slate-800 dark:text-white hover:bg-primary/10 cursor-pointer"
+                                        >
+                                            <span className="font-semibold">{s.value}</span>
+                                            <span className="block text-xs text-slate-400">{s.label.split("(")[1]?.replace(")", "") ?? ""}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                        </div>
+                    </div>
+                    <div className="space-y-1.5">
+                        <Label htmlFor="commonName" className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Common Name <span className="font-normal text-slate-400">(optional)</span></Label>
+                        <Input
+                            id="commonName" value={commonName}
+                            onChange={(e) => setCommonName(e.target.value)}
+                            placeholder="e.g. Elm, Chinar…"
+                            className="w-full text-sm bg-white dark:bg-[#1c271d] border-gray-200 dark:border-[#2a3f2d] text-slate-900 dark:text-white placeholder-slate-400"
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Soil Moisture</Label>
+                        <div className="flex gap-2">
+                            {MOISTURE_OPTIONS.map((opt) => (
+                                <button key={opt.value} type="button"
+                                    onPointerDown={(e) => { e.preventDefault(); setSoilMoisture(opt.value); }}
+                                    className={`flex-1 py-2 rounded-lg border text-xs font-semibold transition-colors ${soilMoisture === opt.value ? "border-primary bg-primary text-black" : "border-gray-200 dark:border-[#2a3f2d] text-slate-600 dark:text-slate-300 hover:border-primary/50"}`}
+                                >
+                                    {opt.icon} {opt.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        <Label className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Health Status</Label>
+                        <div className="flex gap-2">
+                            {HEALTH_OPTIONS.map((opt) => (
+                                <button key={opt.value} type="button"
+                                    onPointerDown={(e) => { e.preventDefault(); setHealthStatus(opt.value); }}
+                                    className={`flex-1 py-2 rounded-lg border text-xs font-semibold transition-colors ${healthStatus === opt.value ? opt.activeClass : "border-gray-200 dark:border-[#2a3f2d] text-slate-600 dark:text-slate-300 hover:border-primary/50"}`}
+                                >
+                                    {opt.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+                <div className="p-5 border-t border-gray-100 dark:border-[#1e2f21] bg-white dark:bg-[#111812] flex gap-2">
+                    <Button type="button" variant="outline" onClick={onBack} className="flex-1 border-gray-200 dark:border-[#2a3f2d]">Cancel</Button>
+                    <Button type="submit" disabled={submitting} className="flex-1 bg-primary hover:bg-[#0fd630] text-black font-semibold gap-1">
+                        {submitting
+                            ? <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                            : <span className="material-symbols-outlined text-[18px]">check_circle</span>
+                        }
+                        {submitting ? "Saving…" : "Save Tree"}
+                    </Button>
+                </div>
+            </form>
+        </>
+    );
+});
+
+const RegisterMapOverlays = React.memo(function RegisterMapOverlays({
+    showMapTip, mapTipFading, mapPointPicked, regLat, regLng,
+}: {
+    showMapTip: boolean; mapTipFading: boolean;
+    mapPointPicked: boolean; regLat: number | null; regLng: number | null;
+}): React.ReactElement {
+    const coordText = mapPointPicked
+        ? `${regLat?.toFixed(5)}, ${regLng?.toFixed(5)} — Tap to move marker`
+        : "Tap map to set location";
+    return (
+        <>
+            {showMapTip && (
+                <div className={`absolute bottom-32 left-1/2 -translate-x-1/2 z-1000 bg-black/80 text-white text-xs font-semibold px-4 py-2.5 rounded-full shadow-lg backdrop-blur-sm pointer-events-none transition-opacity duration-1000 ${mapTipFading ? "opacity-0" : "opacity-100"}`}>
+                    Tap on map to set coordinates
+                </div>
+            )}
+            <div className="absolute top-16 left-1/2 -translate-x-1/2 z-1000 bg-white/80 dark:bg-black/80 px-4 py-2 rounded-full backdrop-blur-sm border border-white/20 shadow-lg flex items-center gap-2 pointer-events-none">
+                <span className="material-symbols-outlined text-primary text-[16px]">location_on</span>
+                <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">{coordText}</span>
+            </div>
+        </>
+    );
+});
+
+const FloatingNav = React.memo(function FloatingNav({
+    username, navOpen, setNavOpen, isAuthenticated, logout,
+}: {
+    username: string | undefined;
+    navOpen: boolean;
+    setNavOpen: React.Dispatch<React.SetStateAction<boolean>>;
+    isAuthenticated: boolean;
+    logout: () => void;
+}): React.ReactElement {
+    return (
+        <>
+            {navOpen && (
+                <div className="absolute inset-0 z-999" onClick={() => setNavOpen(false)} aria-hidden="true" />
+            )}
+            <div className="absolute top-4 right-4 z-1001">
+                <div className="flex items-center gap-2 bg-white/90 dark:bg-[#111812]/90 backdrop-blur-sm border border-gray-200 dark:border-[#2a3f2d] rounded-full px-3 py-1.5 shadow-lg">
+                    <Link href={isAuthenticated ? "/dashboard" : "/"} className="flex items-center gap-1.5 mr-1 hover:opacity-80 transition-opacity">
+                        <span className="material-symbols-outlined text-primary text-[20px]">Forest</span>
+                        <span className="text-sm font-bold text-slate-900 dark:text-white hidden sm:block">Folia</span>
+                    </Link>
+                    <div className="w-px h-4 bg-gray-200 dark:bg-[#2a3f2d]" />
+                    <div className="hidden md:flex items-center gap-1">
+                        <Link href="/almanac" className="text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary px-2 py-1 rounded-full transition-colors">Almanac</Link>
+                        <Link href="/learn-more" className="text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary px-2 py-1 rounded-full transition-colors">Learn More</Link>
+                    </div>
+                    <div className="w-px h-4 bg-gray-200 dark:bg-[#2a3f2d]" />
+                    <button onClick={() => setNavOpen((o) => !o)} aria-label="User menu" className="flex items-center gap-1 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary transition-colors">
+                        <span className="material-symbols-outlined text-[18px]">account_circle</span>
+                        <span className="hidden sm:block max-w-20 truncate">{username}</span>
+                        <span className="material-symbols-outlined text-[14px]">{navOpen ? "expand_less" : "expand_more"}</span>
+                    </button>
+                </div>
+                {navOpen && (
+                    <div className="absolute top-full right-0 mt-2 w-48 bg-white/95 dark:bg-[#111812]/95 backdrop-blur-sm border border-gray-200 dark:border-[#2a3f2d] rounded-xl shadow-xl overflow-hidden">
+                        <div className="md:hidden px-4 py-3 border-b border-gray-100 dark:border-[#1e2f21] flex flex-col gap-1">
+                            <Link href="/almanac" onClick={() => setNavOpen(false)} className="text-sm font-semibold text-slate-700 dark:text-slate-200 hover:text-primary py-1 transition-colors">Almanac</Link>
+                            <Link href="/learn-more" onClick={() => setNavOpen(false)} className="text-sm font-semibold text-slate-700 dark:text-slate-200 hover:text-primary py-1 transition-colors">Learn More</Link>
+                        </div>
+                        <div className="px-4 py-3 border-b border-gray-100 dark:border-[#1e2f21]">
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">Signed in as</p>
+                            <p className="text-sm font-bold text-slate-800 dark:text-white truncate">{username}</p>
+                        </div>
+                        <div className="px-4 py-3 border-b border-gray-100 dark:border-[#1e2f21] flex items-center justify-between">
+                            <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Theme</p>
+                            <ThemeToggle />
+                        </div>
+                        {isAuthenticated && (
+                            <button onClick={() => { logout(); setNavOpen(false); }} className="w-full flex items-center gap-2 px-4 py-3 text-sm font-semibold text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors">
+                                <span className="material-symbols-outlined text-[16px]">logout</span>
+                                Log out
+                            </button>
+                        )}
+                    </div>
+                )}
+            </div>
+        </>
+    );
+});
 
 const TreeCard = React.memo(function TreeCard({ tree }: Readonly<{ tree: TreeDto }>): React.ReactElement {
     const badge = healthBadge[tree.healthStatus] ?? { label: tree.healthStatus, color: "text-slate-400", bg: "bg-slate-400/10" };
@@ -148,6 +469,7 @@ function TreesPageInner(): React.ReactElement {
     const [fetching, setFetching] = useState(false);
 
     // ── UI state ──────────────────────────────────────────────────────────────────────────
+    const [isModeTransitioning, startModeTransition] = useTransition();
     const [mode, setMode] = useState<PageMode>(() =>
         searchParams?.get("register") === "true" ? "register" : "browse"
     );
@@ -173,27 +495,53 @@ function TreesPageInner(): React.ReactElement {
     const [mapTipFading, setMapTipFading] = useState(false);
 
     useEffect(() => {
+        let debounce: number;
         const onResize = () => {
-            if (window.innerWidth >= 1024) {
-                setSidebarOpen(true);
-            }
+            clearTimeout(debounce);
+            debounce = window.setTimeout(() => {
+                if (window.innerWidth >= 1024) setSidebarOpen(true);
+            }, 150);
         };
 
         window.addEventListener("resize", onResize);
-        return () => window.removeEventListener("resize", onResize);
+        return () => {
+            clearTimeout(debounce);
+            window.removeEventListener("resize", onResize);
+        };
+    }, []);
+
+    // Cancel map-tip timers and map-view debounce on unmount
+    useEffect(() => {
+        return () => {
+            if (mapTipTimersRef.current) {
+                clearTimeout(mapTipTimersRef.current.fade);
+                clearTimeout(mapTipTimersRef.current.hide);
+            }
+            if (mapViewDebounceRef.current !== null) clearTimeout(mapViewDebounceRef.current);
+        };
     }, []);
 
     // Track the last view we fetched for to avoid excessive calls
     const lastViewRef = useRef<{ lat: number; lng: number, radius: number } | null>(null);
+    // Holds the AbortController for the in-flight map-view fetch so we can cancel stale requests
+    const mapFetchAbortRef = useRef<AbortController | null>(null);
+    // Holds the fade/hide timer IDs for the map tip so rapid mode-switches don't leak timers
+    const mapTipTimersRef = useRef<{ fade: number; hide: number } | null>(null);
+    // Debounce timer for map view changes
+    const mapViewDebounceRef = useRef<number | null>(null);
+
+    // Stable primitive — avoids re-running effects/callbacks when AuthContext
+    // recreates the user object with the same identity
+    const userUuid = user?.uuid ?? null;
 
     useEffect(() => {
-        if (!loading && !user) {
+        if (!loading && !userUuid) {
             router.replace("/login");
         }
-    }, [loading, user, router]);
+    }, [loading, userUuid, router]);
 
     useEffect(() => {
-        if (!user) return;
+        if (!userUuid) return;
         getUserLocation().then((loc) => {
             setLocating(false);
             const center = loc ?? DEFAULT_CENTER;
@@ -210,26 +558,36 @@ function TreesPageInner(): React.ReactElement {
             setTrees(t);
             setStats(s);
         }).catch(() => { setLocating(false); setLocError(true); });
-    }, [user]);
+    }, [userUuid]);
 
     const switchToRegister = useCallback(() => {
-        setMode("register");
-        setSidebarOpen(true);
-        setSuccessMsg("");
-        setErrorMsg("");
-        setMapPointPicked(false);
-        setShowMapTip(true);
-        setMapTipFading(false);
-        const fadeTimer = window.setTimeout(() => setMapTipFading(true), 2500);
-        const hideTimer = window.setTimeout(() => setShowMapTip(false), 3500);
-        return () => { window.clearTimeout(fadeTimer); window.clearTimeout(hideTimer); };
-    }, []);
+        // Cancel any timers from a previous register session
+        if (mapTipTimersRef.current) {
+            clearTimeout(mapTipTimersRef.current.fade);
+            clearTimeout(mapTipTimersRef.current.hide);
+        }
+        startModeTransition(() => {
+            setMode("register");
+            setSidebarOpen(true);
+            setSuccessMsg("");
+            setErrorMsg("");
+            setMapPointPicked(false);
+            setShowMapTip(true);
+            setMapTipFading(false);
+        });
+        mapTipTimersRef.current = {
+            fade: window.setTimeout(() => setMapTipFading(true), 2500),
+            hide: window.setTimeout(() => setShowMapTip(false), 3500),
+        };
+    }, [startModeTransition]);
 
     const switchToBrowse = useCallback(() => {
-        setMode("browse");
-        setSuccessMsg("");
-        setErrorMsg("");
-    }, []);
+        startModeTransition(() => {
+            setMode("browse");
+            setSuccessMsg("");
+            setErrorMsg("");
+        });
+    }, [startModeTransition]);
 
     const handleLocationChange = useCallback((newLat: number, newLng: number) => {
         setRegLat(newLat);
@@ -240,7 +598,8 @@ function TreesPageInner(): React.ReactElement {
 
     const handleSubmit = useCallback(async (e: React.FormEvent) => {
         e.preventDefault();
-        if (regLat === null || regLng === null) {
+        const hasCoords = regLat != null && regLng != null;
+        if (!hasCoords) {
             setErrorMsg("Please pick a location on the map.");
             return;
         }
@@ -257,13 +616,19 @@ function TreesPageInner(): React.ReactElement {
             healthStatus,
         });
         setSubmitting(false);
-        if (result) {
-            setSuccessMsg("Tree registered successfully!");
-            fetchNearbyTrees(regLat, regLng, 20000).then(setTrees);
-            setTimeout(() => { setSuccessMsg(""); switchToBrowse(); }, 1500);
-        } else {
+        if (!result) {
             setErrorMsg("Failed to register tree. Please try again.");
+            return;
         }
+        setSuccessMsg("Tree registered successfully!");
+        Promise.all([
+            fetchNearbyTrees(regLat, regLng, 20000),
+            fetchTreeStats(regLat, regLng, 20000),
+        ]).then(([t, s]) => {
+            setTrees(t);
+            if (s) setStats(s);
+        });
+        setTimeout(() => { setSuccessMsg(""); switchToBrowse(); }, 1500);
     }, [regLat, regLng, species, commonName, soilMoisture, healthStatus, switchToBrowse]);
 
     const speciesSuggestions = useMemo(() => {
@@ -275,51 +640,43 @@ function TreesPageInner(): React.ReactElement {
     }, [species]);
 
     const handleMapViewChange = useCallback((center: { lat: number; lng: number }, radius: number) => {
-        if (!user) return;
+        if (!userUuid) return;
 
-        // Threshold: only fetch if the center moved by > 20% of the current radius
-        // or if the radius changed significantly (> 30%)
-        const last = lastViewRef.current;
-        if (last) {
-            const latDiff = Math.abs(last.lat - center.lat);
-            const lngDiff = Math.abs(last.lng - center.lng);
-            const radiusDiff = Math.abs(last.radius - radius);
+        // Debounce: wait 200 ms after the last pan/zoom event before doing any work
+        if (mapViewDebounceRef.current !== null) clearTimeout(mapViewDebounceRef.current);
+        mapViewDebounceRef.current = window.setTimeout(() => {
+            mapViewDebounceRef.current = null;
+            const last = lastViewRef.current;
+            const shouldSkip = !!last && !hasMovedSignificantly(last, center, radius);
+            if (shouldSkip) return;
 
-            // Rough conversion for lat/lng diff to meters (approx. 111km per degree)
-            const movedMeters = Math.max(latDiff, lngDiff) * 111000;
+            // Cancel any in-flight request from a previous pan/zoom
+            mapFetchAbortRef.current?.abort();
+            const controller = new AbortController();
+            mapFetchAbortRef.current = controller;
 
-            if (movedMeters < radius * 0.2 && radiusDiff < last.radius * 0.3) {
-                return; // Movement too small, skip fetch
-            }
-        }
+            setFetching(true);
+            lastViewRef.current = { ...center, radius };
 
-        setFetching(true);
-        lastViewRef.current = { ...center, radius };
+            Promise.all([
+                fetchNearbyTrees(center.lat, center.lng, radius, controller.signal),
+                fetchTreeStats(center.lat, center.lng, radius, controller.signal),
+            ]).then(([t, s]) => {
+                if (controller.signal.aborted) return;
+                if (t.length > 0 || s !== null) {
+                    setTrees(t);
+                    setStats(s);
+                }
+            }).finally(() => {
+                if (!controller.signal.aborted) setFetching(false);
+            });
+        }, 200);
+    }, [userUuid]);
 
-        Promise.all([
-            fetchNearbyTrees(center.lat, center.lng, radius),
-            fetchTreeStats(center.lat, center.lng, radius),
-        ]).then((result) => {
-            if (!result) return;
-            const [t, s] = result;
-            setTrees(t);
-            setStats(s);
-        }).finally(() => {
-            setFetching(false);
-        });
-    }, [user]);
-
-    const filtered = useMemo(() => {
-        return trees.filter((t) => {
-            const matchesFilter = filter === "ALL" || t.healthStatus === filter;
-            const q = search.toLowerCase();
-            const matchesSearch =
-                !q ||
-                t.species.toLowerCase().includes(q) ||
-                (t.commonName ?? "").toLowerCase().includes(q);
-            return matchesFilter && matchesSearch;
-        });
-    }, [trees, search, filter]);
+    const filtered = useMemo(
+        () => trees.filter((t) => matchesTree(t, filter, search)),
+        [trees, search, filter],
+    );
 
     if (loading || !user) {
         return (
@@ -343,202 +700,26 @@ function TreesPageInner(): React.ReactElement {
 
             {/* ── Collapsible Sidebar ─────────────────────────────────────────── */}
             <div className={`absolute inset-y-0 left-0 z-30 shrink-0 transition-all duration-300 ease-in-out lg:relative lg:z-20 ${sidebarOpen ? "w-[78vw] max-w-[320px] sm:w-[70vw] sm:max-w-sm md:w-96 lg:w-110" : "w-0"}`}>
-                <aside className={`absolute inset-0 flex flex-col bg-white dark:bg-[#111812] border-r border-gray-200 dark:border-[#2a3f2d] z-20 shadow-xl overflow-hidden transition-opacity duration-300 ${sidebarOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}>
-                    {/* Header */}
-                    <div className="p-5 pb-2 border-b border-gray-100 dark:border-[#1e2f21]">
-                        <div className="flex items-center justify-between mb-3">
-                            {mode === "register" ? (
-                                <>
-                                    <button onClick={switchToBrowse} className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors">
-                                        <span className="material-symbols-outlined text-[16px]">arrow_back</span>
-                                        Back
-                                    </button>
-                                    <h2 className="text-sm font-bold text-slate-900 dark:text-white tracking-wide">Register Tree</h2>
-                                </>
-                            ) : (
-                                <h2 className="text-sm font-bold text-slate-900 dark:text-white tracking-wide">Nearby Trees</h2>
-                            )}
-                            <button
-                                onClick={() => setSidebarOpen(false)}
-                                aria-label="Minimize sidebar"
-                                className="md:hidden flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 dark:bg-[#1c271d] border border-gray-200 dark:border-[#2a3f2d] text-slate-500 dark:text-slate-300"
-                            >
-                                <span className="material-symbols-outlined text-[18px]">close</span>
-                            </button>
-                        </div>
-
-                        {mode === "browse" ? (
-                            <>
-                                {/* Location indicator */}
-                                <div className="flex items-center gap-2 mb-3 px-1">
-                                    <span className="material-symbols-outlined text-[16px] text-slate-400">location_on</span>
-                                    <LocationLabel locating={locating} locError={locError} location={location} />
-                                </div>
-                                <div className="relative mb-3">
-                                    <span className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-                                        <span className="material-symbols-outlined text-slate-400 text-[20px]">search</span>
-                                    </span>
-                                    <input
-                                        type="text"
-                                        value={search}
-                                        onChange={(e) => setSearch(e.target.value)}
-                                        placeholder="Search trees or species…"
-                                        className="w-full pl-10 pr-3 py-2.5 rounded-lg bg-gray-100 dark:bg-[#1c271d] border-none text-sm text-slate-900 dark:text-white placeholder-slate-500 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary/50"
-                                    />
-                                </div>
-                                {/* Filter pills */}
-                                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                                    {filterLabels.map(({ key, label }) => (
-                                        <button
-                                            key={key}
-                                            onClick={() => setFilter(key)}
-                                            className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${filter === key
-                                                    ? "bg-primary text-black"
-                                                    : "bg-gray-100 dark:bg-[#1c271d] border border-transparent dark:border-[#2f4532] text-slate-600 dark:text-slate-400 hover:bg-gray-200 dark:hover:bg-[#2f4532]"
-                                                }`}
-                                        >
-                                            {key === "DYING" && (
-                                                <span className="w-2 h-2 rounded-full bg-red-500 inline-block" />
-                                            )}
-                                            {key === "STRESSED" && (
-                                                <span className="w-2 h-2 rounded-full bg-yellow-400 inline-block" />
-                                            )}
-                                            {label}
-                                        </button>
-                                    ))}
-                                </div>
-                            </>
-                        ) : (
-                            <div className="flex items-center gap-2 px-1 pb-2">
-                                <span className={`w-2.5 h-2.5 rounded-full ${mapPointPicked ? "bg-primary" : "bg-slate-400"}`} />
-                                <span className="text-xs text-slate-500 dark:text-slate-400">
-                                    {mapPointPicked ? `${regLat?.toFixed(5)}, ${regLng?.toFixed(5)}` : "Tap map to set location"}
-                                </span>
-                            </div>
-                        )}
-                    </div>
-
+                <aside className={`absolute inset-0 flex flex-col bg-white dark:bg-[#111812] border-r border-gray-200 dark:border-[#2a3f2d] z-20 shadow-xl overflow-hidden transition-opacity duration-300 ${sidebarOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"} ${isModeTransitioning ? "opacity-60" : ""}`}>
                     {mode === "browse" ? (
-                        <>
-                            {/* Stats */}
-                            {stats && <StatsPill stats={stats} />}
-
-                            {/* Tree list */}
-                            <div className="flex-1 overflow-y-auto p-5 pt-2 space-y-3">
-                                {filtered.length === 0 ? (
-                                    <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-8">
-                                        No trees found.
-                                    </p>
-                                ) : (
-                                    filtered.map((tree) => <TreeCard key={tree.publicId} tree={tree} />)
-                                )}
-                            </div>
-
-                            {/* CTA */}
-                            <div className="p-5 border-t border-gray-100 dark:border-[#1e2f21] bg-white dark:bg-[#111812]">
-                                <Button onClick={switchToRegister} className="w-full bg-primary hover:bg-[#0fd630] text-black font-semibold py-3 rounded-lg gap-2">
-                                    <span className="material-symbols-outlined text-[20px]">add_circle</span>
-                                    Register New Tree
-                                </Button>
-                            </div>
-                        </>
+                        <BrowseSidebar
+                            stats={stats} filtered={filtered} filter={filter} setFilter={setFilter}
+                            search={search} setSearch={setSearch}
+                            locating={locating} locError={locError} location={location}
+                            onRegister={switchToRegister} onClose={() => setSidebarOpen(false)}
+                        />
                     ) : (
-                        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
-                            <div className="flex-1 overflow-y-auto p-5 space-y-5">
-                                {errorMsg && (
-                                    <div className="text-xs text-red-500 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2">{errorMsg}</div>
-                                )}
-                                {successMsg && (
-                                    <div className="text-xs text-primary bg-primary/10 border border-primary/30 rounded-lg px-3 py-2">{successMsg}</div>
-                                )}
-
-                                {/* Species */}
-                                <div className="relative space-y-1.5">
-                                    <Label htmlFor="species" className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Species</Label>
-                                    <div className="relative">
-                                        <Input
-                                            id="species"
-                                            value={species}
-                                            onChange={(e) => setSpecies(e.target.value)}
-                                            onFocus={() => setSpeciesFocused(true)}
-                                            onBlur={() => setTimeout(() => setSpeciesFocused(false), 200)}
-                                            placeholder="Start typing…"
-                                            autoComplete="off"
-                                            className="w-full text-sm bg-white dark:bg-[#1c271d] border-gray-200 dark:border-[#2a3f2d] text-slate-900 dark:text-white placeholder-slate-400"
-                                        />
-                                        {speciesFocused && speciesSuggestions.length > 0 && (
-                                            <ul className="absolute left-0 right-0 top-full mt-1 z-50 bg-white dark:bg-[#1c271d] border border-gray-200 dark:border-[#2a3f2d] rounded-lg overflow-hidden shadow-lg max-h-48 overflow-y-auto">
-                                                {speciesSuggestions.map((s) => (
-                                                    <li key={s.value}
-                                                        onPointerDown={(e) => { e.preventDefault(); setSpecies(s.value); setSpeciesFocused(false); }}
-                                                        className="px-4 py-2.5 text-sm text-slate-800 dark:text-white hover:bg-primary/10 cursor-pointer"
-                                                    >
-                                                        <span className="font-semibold">{s.value}</span>
-                                                        <span className="block text-xs text-slate-400">{s.label.split("(")[1]?.replace(")", "") ?? ""}</span>
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* Common name */}
-                                <div className="space-y-1.5">
-                                    <Label htmlFor="commonName" className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Common Name <span className="font-normal text-slate-400">(optional)</span></Label>
-                                    <Input
-                                        id="commonName"
-                                        value={commonName}
-                                        onChange={(e) => setCommonName(e.target.value)}
-                                        placeholder="e.g. Elm, Chinar…"
-                                        className="w-full text-sm bg-white dark:bg-[#1c271d] border-gray-200 dark:border-[#2a3f2d] text-slate-900 dark:text-white placeholder-slate-400"
-                                    />
-                                </div>
-
-                                {/* Soil Moisture */}
-                                <div className="space-y-2">
-                                    <Label className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Soil Moisture</Label>
-                                    <div className="flex gap-2">
-                                        {MOISTURE_OPTIONS.map((opt) => (
-                                            <button key={opt.value} type="button"
-                                                onPointerDown={(e) => { e.preventDefault(); setSoilMoisture(opt.value); }}
-                                                className={`flex-1 py-2 rounded-lg border text-xs font-semibold transition-colors ${soilMoisture === opt.value ? "border-primary bg-primary text-black" : "border-gray-200 dark:border-[#2a3f2d] text-slate-600 dark:text-slate-300 hover:border-primary/50"}`}
-                                            >
-                                                {opt.icon} {opt.label}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* Health Status */}
-                                <div className="space-y-2">
-                                    <Label className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Health Status</Label>
-                                    <div className="flex gap-2">
-                                        {HEALTH_OPTIONS.map((opt) => (
-                                            <button key={opt.value} type="button"
-                                                onPointerDown={(e) => { e.preventDefault(); setHealthStatus(opt.value); }}
-                                                className={`flex-1 py-2 rounded-lg border text-xs font-semibold transition-colors ${healthStatus === opt.value ? opt.activeClass : "border-gray-200 dark:border-[#2a3f2d] text-slate-600 dark:text-slate-300 hover:border-primary/50"}`}
-                                            >
-                                                {opt.label}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="p-5 border-t border-gray-100 dark:border-[#1e2f21] bg-white dark:bg-[#111812] flex gap-2">
-                                <Button type="button" variant="outline" onClick={switchToBrowse} className="flex-1 border-gray-200 dark:border-[#2a3f2d]">
-                                    Cancel
-                                </Button>
-                                <Button type="submit" disabled={submitting} className="flex-1 bg-primary hover:bg-[#0fd630] text-black font-semibold gap-1">
-                                    {submitting ? (
-                                        <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
-                                    ) : (
-                                        <span className="material-symbols-outlined text-[18px]">check_circle</span>
-                                    )}
-                                    {submitting ? "Saving…" : "Save Tree"}
-                                </Button>
-                            </div>
-                        </form>
+                        <RegisterSidebar
+                            species={species} setSpecies={setSpecies}
+                            speciesFocused={speciesFocused} setSpeciesFocused={setSpeciesFocused}
+                            speciesSuggestions={speciesSuggestions}
+                            commonName={commonName} setCommonName={setCommonName}
+                            soilMoisture={soilMoisture} setSoilMoisture={setSoilMoisture}
+                            healthStatus={healthStatus} setHealthStatus={setHealthStatus}
+                            submitting={submitting} errorMsg={errorMsg} successMsg={successMsg}
+                            mapPointPicked={mapPointPicked} regLat={regLat} regLng={regLng}
+                            onSubmit={handleSubmit} onBack={switchToBrowse} onClose={() => setSidebarOpen(false)}
+                        />
                     )}
                 </aside>
 
@@ -567,103 +748,36 @@ function TreesPageInner(): React.ReactElement {
                 </button>
 
                 {mode === "browse" ? (
-                    <TreesMapView
-                        trees={filtered}
-                        center={location ?? DEFAULT_CENTER}
-                        onViewChange={handleMapViewChange}
-                    />
+                    <MapErrorBoundary>
+                        <TreesMapView
+                            trees={filtered}
+                            center={location ?? DEFAULT_CENTER}
+                            onViewChange={handleMapViewChange}
+                        />
+                    </MapErrorBoundary>
                 ) : (
                     <>
-                        <PickLocationMap
-                            lat={regLat ?? (location?.lat ?? DEFAULT_CENTER.lat)}
-                            lng={regLng ?? (location?.lng ?? DEFAULT_CENTER.lng)}
-                            onLocationChange={handleLocationChange}
+                        <MapErrorBoundary>
+                            <PickLocationMap
+                                lat={regLat ?? (location?.lat ?? DEFAULT_CENTER.lat)}
+                                lng={regLng ?? (location?.lng ?? DEFAULT_CENTER.lng)}
+                                onLocationChange={handleLocationChange}
+                            />
+                        </MapErrorBoundary>
+                        <RegisterMapOverlays
+                            showMapTip={showMapTip} mapTipFading={mapTipFading}
+                            mapPointPicked={mapPointPicked} regLat={regLat} regLng={regLng}
                         />
-                        {/* Map tip toast */}
-                        {showMapTip && (
-                            <div className={`absolute bottom-32 left-1/2 -translate-x-1/2 z-1000 bg-black/80 text-white text-xs font-semibold px-4 py-2.5 rounded-full shadow-lg backdrop-blur-sm pointer-events-none transition-opacity duration-1000 ${mapTipFading ? "opacity-0" : "opacity-100"}`}>
-                                Tap on map to set coordinates
-                            </div>
-                        )}
-                        {/* Coordinate overlay */}
-                        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-1000 bg-white/80 dark:bg-black/80 px-4 py-2 rounded-full backdrop-blur-sm border border-white/20 shadow-lg flex items-center gap-2 pointer-events-none">
-                            <span className="material-symbols-outlined text-primary text-[16px]">location_on</span>
-                            <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
-                                {mapPointPicked
-                                    ? `${regLat?.toFixed(5)}, ${regLng?.toFixed(5)} — Tap to move marker`
-                                    : "Tap map to set location"}
-                            </span>
-                        </div>
                     </>
                 )}
 
-                {/* Nav dropdown backdrop — tap outside to close */}
-                {navOpen && (
-                    <div
-                        className="absolute inset-0 z-999"
-                        onClick={() => setNavOpen(false)}
-                        aria-hidden="true"
-                    />
-                )}
-
-                {/* ── Floating nav ──────────────────────────────────────────────── */}
-                <div className="absolute top-4 right-4 z-1001">
-                    <div className="flex items-center gap-2 bg-white/90 dark:bg-[#111812]/90 backdrop-blur-sm border border-gray-200 dark:border-[#2a3f2d] rounded-full px-3 py-1.5 shadow-lg">
-                        {/* Logo */}
-                        <Link href="/" className="flex items-center gap-1.5 mr-1 hover:opacity-80 transition-opacity">
-                            <span className="material-symbols-outlined text-primary text-[20px]">Forest</span>
-                            <span className="text-sm font-bold text-slate-900 dark:text-white hidden sm:block">Folia</span>
-                        </Link>
-
-                        <div className="w-px h-4 bg-gray-200 dark:bg-[#2a3f2d]" />
-
-                        {/* Nav links */}
-                        <div className="hidden md:flex items-center gap-1">
-                            <Link href="/almanac" className="text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary px-2 py-1 rounded-full transition-colors">Almanac</Link>
-                            <Link href="/learn-more" className="text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary px-2 py-1 rounded-full transition-colors">Learn More</Link>
-                        </div>
-
-                        <div className="w-px h-4 bg-gray-200 dark:bg-[#2a3f2d]" />
-
-                        {/* User menu toggle */}
-                        <button
-                            onClick={() => setNavOpen((o) => !o)}
-                            aria-label="User menu"
-                            className="flex items-center gap-1 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary transition-colors"
-                        >
-                            <span className="material-symbols-outlined text-[18px]">account_circle</span>
-                            <span className="hidden sm:block max-w-20 truncate">{user?.username}</span>
-                            <span className="material-symbols-outlined text-[14px]">{navOpen ? "expand_less" : "expand_more"}</span>
-                        </button>
-                    </div>
-
-                    {/* Dropdown */}
-                    {navOpen && (
-                        <div className="absolute top-full right-0 mt-2 w-48 bg-white/95 dark:bg-[#111812]/95 backdrop-blur-sm border border-gray-200 dark:border-[#2a3f2d] rounded-xl shadow-xl overflow-hidden">
-                            <div className="md:hidden px-4 py-3 border-b border-gray-100 dark:border-[#1e2f21] flex flex-col gap-1">
-                                <Link href="/almanac" onClick={() => setNavOpen(false)} className="text-sm font-semibold text-slate-700 dark:text-slate-200 hover:text-primary py-1 transition-colors">Almanac</Link>
-                                <Link href="/learn-more" onClick={() => setNavOpen(false)} className="text-sm font-semibold text-slate-700 dark:text-slate-200 hover:text-primary py-1 transition-colors">Learn More</Link>
-                            </div>
-                            <div className="px-4 py-3 border-b border-gray-100 dark:border-[#1e2f21]">
-                                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">Signed in as</p>
-                                <p className="text-sm font-bold text-slate-800 dark:text-white truncate">{user?.username}</p>
-                            </div>
-                            <div className="px-4 py-3 border-b border-gray-100 dark:border-[#1e2f21] flex items-center justify-between">
-                                <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Theme</p>
-                                <ThemeToggle />
-                            </div>
-                            {isAuthenticated && (
-                                <button
-                                    onClick={() => { logout(); setNavOpen(false); }}
-                                    className="w-full flex items-center gap-2 px-4 py-3 text-sm font-semibold text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
-                                >
-                                    <span className="material-symbols-outlined text-[16px]">logout</span>
-                                    Log out
-                                </button>
-                            )}
-                        </div>
-                    )}
-                </div>
+                <FloatingNav
+                    username={user?.username}
+                    navOpen={navOpen}
+                    setNavOpen={setNavOpen}
+                    isAuthenticated={isAuthenticated}
+                    logout={logout}
+                />
 
                 {/* Locating overlay — top-16 clears the floating nav pill */}
                 {locating && (
