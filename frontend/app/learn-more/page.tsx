@@ -36,21 +36,40 @@ export default function LearnMore() {
 								</Link>
 							</div>
 						</div>
-						<div className="relative rounded-2xl overflow-hidden shadow-xl border border-white/20 dark:border-white/5">
-							<div
-								className="h-full min-h-72 bg-cover bg-center"
-								style={{
-									backgroundImage:
-										"linear-gradient(180deg, rgba(0,0,0,0.25), rgba(0,0,0,0.45)), url('https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1600&q=80')",
-								}}
-								aria-hidden
-							></div>
-							<div className="absolute bottom-4 left-4 right-4 bg-background-light/90 dark:bg-background-dark/90 backdrop-blur-md px-4 py-3 rounded-xl border border-white/20 shadow-lg">
+						<div className="rounded-2xl border border-slate-200 dark:border-[#28392b] bg-slate-50/80 dark:bg-[#13241a]/70 p-6 lg:p-8 shadow-xl flex flex-col gap-5">
+							<div className="flex items-center justify-between">
+								<p className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Impact snapshot</p>
+								<span className="inline-flex items-center gap-1 rounded-full bg-primary/15 text-primary px-2.5 py-1 text-[11px] font-bold">
+									<span className="material-symbols-outlined text-[14px]">bolt</span>
+									Live updates
+								</span>
+							</div>
+
+							<div className="grid grid-cols-2 gap-3">
+								<div className="rounded-xl border border-slate-200 dark:border-[#28392b] bg-white dark:bg-[#0f1b12] p-4">
+									<p className="text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400 font-bold">Trees this zone</p>
+									<p className="text-2xl font-black mt-1">248</p>
+								</div>
+								<div className="rounded-xl border border-slate-200 dark:border-[#28392b] bg-white dark:bg-[#0f1b12] p-4">
+									<p className="text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400 font-bold">Need water now</p>
+									<p className="text-2xl font-black mt-1 text-[#8D6E63] dark:text-[#D7CCC8]">63</p>
+								</div>
+								<div className="rounded-xl border border-slate-200 dark:border-[#28392b] bg-white dark:bg-[#0f1b12] p-4">
+									<p className="text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400 font-bold">Avg. watering gap</p>
+									<p className="text-2xl font-black mt-1">4.2d</p>
+								</div>
+								<div className="rounded-xl border border-slate-200 dark:border-[#28392b] bg-white dark:bg-[#0f1b12] p-4">
+									<p className="text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400 font-bold">Active guardians</p>
+									<p className="text-2xl font-black mt-1">34</p>
+								</div>
+							</div>
+
+							<div className="rounded-xl border border-primary/30 dark:border-primary/40 bg-primary/10 dark:bg-primary/10 p-4">
 								<div className="flex items-start gap-3">
-									<span className="material-symbols-outlined text-primary mt-1">water_drop</span>
+									<span className="material-symbols-outlined text-primary mt-0.5">water_drop</span>
 									<div>
-										<p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold">Why it matters</p>
-										<p className="text-sm font-semibold">Water within the first 2 years to lock in survival.</p>
+										<p className="text-xs text-slate-600 dark:text-slate-300 uppercase font-bold">Suggested loop</p>
+										<p className="text-sm font-semibold text-slate-900 dark:text-white">Mon / Thu evening • 15L per sapling</p>
 									</div>
 								</div>
 							</div>
@@ -163,14 +182,28 @@ export default function LearnMore() {
 							</div>
 						</div>
 					</div>
-					<div className="bg-[#e6f6eb] dark:bg-[#13241a] border border-primary/30 dark:border-primary/40 rounded-2xl p-8 shadow-md flex flex-col gap-4">
-						<h3 className="text-xl font-bold text-slate-900 dark:text-white">Interested ?</h3>
-						<p className="text-slate-700 dark:text-slate-300 text-sm">
-							Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus id lectus velit. Curabitur a magna posuere velit porttitor feugiat nec nec mi. Nunc fringilla mollis enim in luctus. Sed commodo erat et tellus pharetra egestas. Sed a metus nisi.
+					<div className="bg-[#e6f6eb] dark:bg-[#13241a] border border-primary/30 dark:border-primary/40 rounded-2xl p-8 shadow-md flex flex-col gap-5">
+						<div className="inline-flex items-center gap-2 w-fit rounded-full bg-primary/15 text-primary px-3 py-1 text-[11px] font-bold uppercase tracking-wider">
+							<span className="material-symbols-outlined text-[14px]">groups</span>
+							Community role
+						</div>
+						<h3 className="text-xl font-bold text-slate-900 dark:text-white">Become a block coordinator</h3>
+						<p className="text-slate-700 dark:text-slate-300 text-sm leading-relaxed">
+							Help 8–12 nearby trees stay on schedule. You will organize a simple watering rota, remind volunteers during hot days, and flag urgent issues so no sapling is missed.
 						</p>
-						<button className="flex h-12 items-center justify-center rounded-lg bg-primary hover:bg-[#0fd630] transition-colors px-4 text-[#111812] text-sm font-bold shadow-lg shadow-primary/20">
-							Something wise
-						</button>
+						<ul className="space-y-2 text-sm text-slate-700 dark:text-slate-300">
+							<li className="flex items-center gap-2"><span className="material-symbols-outlined text-primary text-[16px]">check_circle</span>Weekly route plan in under 10 minutes</li>
+							<li className="flex items-center gap-2"><span className="material-symbols-outlined text-primary text-[16px]">check_circle</span>Priority alerts for heat-stressed trees</li>
+							<li className="flex items-center gap-2"><span className="material-symbols-outlined text-primary text-[16px]">check_circle</span>Shared impact stats with your local team</li>
+						</ul>
+						<div className="flex flex-col sm:flex-row gap-3">
+							<Link className="flex h-11 items-center justify-center rounded-lg bg-primary hover:bg-[#0fd630] transition-colors px-4 text-[#111812] text-sm font-bold shadow-lg shadow-primary/20" href="/register">
+								Join as coordinator
+							</Link>
+							<Link className="flex h-11 items-center justify-center rounded-lg border border-slate-200 dark:border-[#28392b] hover:bg-white/70 dark:hover:bg-[#1a2e1e] transition-colors px-4 text-slate-900 dark:text-white text-sm font-bold" href="/dashboard">
+								See dashboard
+							</Link>
+						</div>
 					</div>
 				</section>
 

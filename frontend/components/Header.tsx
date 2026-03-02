@@ -7,10 +7,18 @@ import { ThemeToggle } from "./ThemeToggle";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
 import { Menu } from "lucide-react";
+import ConfirmLogoutDialog from "@/components/ConfirmLogoutDialog";
 
 export default function Header() {
     const { user, logout, isAuthenticated } = useAuth();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
+
+    const handleConfirmLogout = () => {
+        logout();
+        setIsMenuOpen(false);
+        setIsLogoutConfirmOpen(false);
+    };
 
     return (
         <nav className="w-full border-b border-[#e5e7eb] dark:border-[#28392b] bg-background-light dark:bg-background-dark sticky top-0 z-50">
@@ -29,6 +37,14 @@ export default function Header() {
                         >
                             Almanac
                         </Link>
+                        {isAuthenticated && (
+                            <Link
+                                href="/dashboard"
+                                className="text-sm font-bold text-slate-700 dark:text-slate-200 hover:text-primary dark:hover:text-primary transition-colors"
+                            >
+                                Dashboard
+                            </Link>
+                        )}
                         {isAuthenticated && (
                             <Link
                                 href="/trees"
@@ -59,7 +75,7 @@ export default function Header() {
                                 </Link>
                                 <Button
                                     variant="ghost"
-                                    onClick={logout}
+                                    onClick={() => setIsLogoutConfirmOpen(true)}
                                 >
                                     Log out
                                 </Button>
@@ -95,6 +111,16 @@ export default function Header() {
                             {isAuthenticated && (
                                 <SheetClose asChild>
                                     <Link
+                                        href="/dashboard"
+                                        className="text-base font-bold text-slate-700 dark:text-slate-200 hover:text-primary px-4 py-2 rounded-lg transition-colors"
+                                    >
+                                        Dashboard
+                                    </Link>
+                                </SheetClose>
+                            )}
+                            {isAuthenticated && (
+                                <SheetClose asChild>
+                                    <Link
                                         href="/trees"
                                         className="text-base font-bold text-slate-700 dark:text-slate-200 hover:text-primary px-4 py-2 rounded-lg transition-colors"
                                     >
@@ -117,7 +143,6 @@ export default function Header() {
                             {isAuthenticated ? (
                                 <>
                                     <div className="px-4 py-2">
-                                        <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold mb-1">Signed in as</p>
                                         <SheetClose asChild>
                                             <Link
                                                 href={`/u/${user?.username}`}
@@ -129,10 +154,7 @@ export default function Header() {
                                     </div>
                                     <Button
                                         variant="destructive"
-                                        onClick={() => {
-                                            logout();
-                                            setIsMenuOpen(false);
-                                        }}
+                                        onClick={() => setIsLogoutConfirmOpen(true)}
                                         className="mx-4"
                                     >
                                         <span className="material-symbols-outlined text-sm mr-2">logout</span>
@@ -150,6 +172,12 @@ export default function Header() {
                     </SheetContent>
                 </Sheet>
             </div>
+
+            <ConfirmLogoutDialog
+                open={isLogoutConfirmOpen}
+                onOpenChange={setIsLogoutConfirmOpen}
+                onConfirm={handleConfirmLogout}
+            />
         </nav>
     );
 }

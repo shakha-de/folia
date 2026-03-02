@@ -42,10 +42,10 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Check if mock authentication is enabled
+// Development auth mode toggle
 const MOCK_AUTH_ENABLED = process.env.NEXT_PUBLIC_MOCK_AUTH === 'true';
 
-// Mock user data
+// Development auth fallback user
 const MOCK_USER: User = {
     uuid: "mock-uuid-123",
     username: "demo_user",
@@ -59,7 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Scrub any stale mock tokens that would cause MalformedJwtException on the server.
+        // Scrub any stale non-JWT token that would cause MalformedJwtException on the server.
         // A valid JWT always has exactly 2 period characters (header.payload.signature).
         const storedToken = localStorage.getItem("accessToken");
         if (storedToken && (storedToken.match(/\./g) || []).length !== 2) {
@@ -79,9 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const login = async (credentials: LoginCredentials) => {
         if (MOCK_AUTH_ENABLED) {
-            // Mock authentication - no backend call
-            console.log("🎭 Mock authentication enabled - bypassing backend");
-            console.log("Credentials:", credentials);
+            // Development auth path (no backend call)
 
             // Simulate network delay
             await new Promise(resolve => setTimeout(resolve, 500));
@@ -99,7 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                     : (credentials?.email ?? MOCK_USER.email),
             };
 
-            // Set mock tokens and user data
+            // Set local development tokens and user data
             setAccessToken("mock-access-token");
             localStorage.setItem("refreshToken", "mock-refresh-token");
             localStorage.setItem("user", JSON.stringify(mockUser));
@@ -125,14 +123,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const register = async (data: RegisterData) => {
         if (MOCK_AUTH_ENABLED) {
-            // Mock registration - no backend call
-            console.log("🎭 Mock authentication enabled - bypassing backend");
-            console.log("Registration data:", data);
+            // Development auth registration path (no backend call)
 
             // Simulate network delay
             await new Promise(resolve => setTimeout(resolve, 800));
 
-            // Create mock user with provided username/email
+            // Create development user with provided username/email
             const mockUser = {
                 ...MOCK_USER,
                 username: data.username,
@@ -164,10 +160,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     const logout = () => {
-        if (MOCK_AUTH_ENABLED) {
-            console.log("🎭 Mock logout");
-        }
-
         setAccessToken(null);
         localStorage.removeItem("refreshToken");
         localStorage.removeItem("user");

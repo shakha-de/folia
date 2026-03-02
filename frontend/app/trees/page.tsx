@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import ConfirmLogoutDialog from "@/components/ConfirmLogoutDialog";
 
 function MapLoader() {
     return (
@@ -347,6 +348,14 @@ const FloatingNav = React.memo(function FloatingNav({
     isAuthenticated: boolean;
     logout: () => void;
 }): React.ReactElement {
+    const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
+
+    const handleConfirmLogout = () => {
+        logout();
+        setNavOpen(false);
+        setIsLogoutConfirmOpen(false);
+    };
+
     return (
         <>
             {navOpen && (
@@ -377,15 +386,20 @@ const FloatingNav = React.memo(function FloatingNav({
                             <Link href="/learn-more" onClick={() => setNavOpen(false)} className="text-sm font-semibold text-slate-700 dark:text-slate-200 hover:text-primary py-1 transition-colors">Learn More</Link>
                         </div>
                         <div className="px-4 py-3 border-b border-gray-100 dark:border-[#1e2f21]">
-                            <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">Signed in as</p>
-                            <p className="text-sm font-bold text-slate-800 dark:text-white truncate">{username}</p>
+                            <Link
+                                href={`/u/${username}`}
+                                onClick={() => setNavOpen(false)}
+                                className="text-sm font-bold text-slate-800 dark:text-white truncate hover:text-primary transition-colors"
+                            >
+                                {username}
+                            </Link>
                         </div>
                         <div className="px-4 py-3 border-b border-gray-100 dark:border-[#1e2f21] flex items-center justify-between">
                             <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Theme</p>
                             <ThemeToggle />
                         </div>
                         {isAuthenticated && (
-                            <button onClick={() => { logout(); setNavOpen(false); }} className="w-full flex items-center gap-2 px-4 py-3 text-sm font-semibold text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors">
+                            <button onClick={() => setIsLogoutConfirmOpen(true)} className="w-full flex items-center gap-2 px-4 py-3 text-sm font-semibold text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors">
                                 <span className="material-symbols-outlined text-[16px]">logout</span>
                                 Log out
                             </button>
@@ -393,6 +407,12 @@ const FloatingNav = React.memo(function FloatingNav({
                     </div>
                 )}
             </div>
+
+            <ConfirmLogoutDialog
+                open={isLogoutConfirmOpen}
+                onOpenChange={setIsLogoutConfirmOpen}
+                onConfirm={handleConfirmLogout}
+            />
         </>
     );
 });
