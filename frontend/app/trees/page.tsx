@@ -503,7 +503,7 @@ function TreesPageInner(): React.ReactElement {
     // ── Register form state ────────────────────────────────────────────────────────────────
     const [regLat, setRegLat] = useState<number | null>(null);
     const [regLng, setRegLng] = useState<number | null>(null);
-    const [species, setSpecies] = useState("Ulmus pumila");
+    const [species, setSpecies] = useState("");
     const [commonName, setCommonName] = useState("");
     const [soilMoisture, setSoilMoisture] = useState<SoilMoistureLevel>("MODERATE");
     const [healthStatus, setHealthStatus] = useState<HealthStatus>("HEALTHY");
