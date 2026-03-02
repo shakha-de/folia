@@ -6,11 +6,12 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { toast } from "react-toastify";
+import { extractApiErrorMessage } from "@/lib/apiErrorMessage";
 
 export default function LoginPage() {
     const [identifier, setIdentifier] = useState("");
     const [password, setPassword] = useState("");
-    const [error, setError] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const { login, isAuthenticated, loading } = useAuth();
     const router = useRouter();
@@ -24,15 +25,14 @@ export default function LoginPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setError("");
         setIsLoading(true);
 
         try {
-            await login({ identifier, password });
+            const successMessage = await login({ identifier, password });
+            toast.success(successMessage || "Login successful");
             router.push("/dashboard");
         } catch (err: unknown) {
-            const errorRes = err as { response?: { data?: { message?: string } } };
-            setError(errorRes?.response?.data?.message || "Invalid credentials. Please try again.");
+            toast.error(extractApiErrorMessage(err, "Login failed. Please try again."));
         } finally {
             setIsLoading(false);
         }
@@ -60,12 +60,6 @@ export default function LoginPage() {
                 </div>
 
                 <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-                    {error && (
-                        <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-500 text-sm text-center">
-                            {error}
-                        </div>
-                    )}
-
                     <div className="space-y-4">
                         <div>
                             <label htmlFor="identifier" className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">

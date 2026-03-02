@@ -6,27 +6,27 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { toast } from "react-toastify";
+import { extractApiErrorMessage } from "@/lib/apiErrorMessage";
 
 export default function RegisterPage() {
     const [username, setUsername] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [error, setError] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const { register } = useAuth();
     const router = useRouter();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setError("");
         setIsLoading(true);
 
         try {
-            await register({ username, email, password });
+            const successMessage = await register({ username, email, password });
+            toast.success(successMessage || "Registration successful");
             router.push("/dashboard");
         } catch (err: unknown) {
-            const errorRes = err as { response?: { data?: { message?: string } } };
-            setError(errorRes?.response?.data?.message || "Registration failed. Please check your details.");
+            toast.error(extractApiErrorMessage(err, "Registration failed. Please try again."));
         } finally {
             setIsLoading(false);
         }
@@ -49,12 +49,6 @@ export default function RegisterPage() {
                 </div>
 
                 <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-                    {error && (
-                        <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-500 text-sm text-center">
-                            {error}
-                        </div>
-                    )}
-
                     <div className="space-y-4">
                         <div>
                             <label htmlFor="username" className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">

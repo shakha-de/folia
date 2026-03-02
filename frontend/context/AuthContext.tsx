@@ -34,8 +34,8 @@ interface RegisterData {
 interface AuthContextType {
     user: User | null;
     loading: boolean;
-    login: (credentials: LoginCredentials) => Promise<void>;
-    register: (data: RegisterData) => Promise<void>;
+    login: (credentials: LoginCredentials) => Promise<string>;
+    register: (data: RegisterData) => Promise<string>;
     logout: () => void;
     isAuthenticated: boolean;
 }
@@ -103,7 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             localStorage.setItem("user", JSON.stringify(mockUser));
 
             setUser(mockUser);
-            return;
+            return "Login successful";
         }
 
         // Real authentication
@@ -116,6 +116,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             localStorage.setItem("user", JSON.stringify(userData));
 
             setUser(userData);
+            return response.data.message || "Login successful";
         } catch (error) {
             throw error;
         }
@@ -140,7 +141,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             localStorage.setItem("user", JSON.stringify(mockUser));
 
             setUser(mockUser);
-            return;
+            return "Registration successful";
         }
 
         // Real registration
@@ -154,6 +155,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 localStorage.setItem("user", JSON.stringify(userData));
                 setUser(userData);
             }
+
+            return response.data.message || "Registration successful";
         } catch (error) {
             throw error;
         }
