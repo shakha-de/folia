@@ -157,6 +157,52 @@ export interface UserDto {
     enabled: boolean;
 }
 
+export interface UserBadgeDto {
+    id: string;
+    name: string;
+    icon: string;
+    unlocked: boolean;
+}
+
+export interface UserStatsDto {
+    xp: number;
+    rank: string;
+    nextRank: string;
+    xpToNextRank: number;
+    progressPercent: number;
+    treesRegistered: number;
+    wateringsLogged: number;
+    currentWateringsStreak: number;
+    co2OffsetKg: number;
+    unlockedBadges: Record<string, UserBadgeDto>;
+}
+
+export interface LeaderboardEntryDto {
+    position: number;
+    username: string;
+    xp: number;
+    rank: string;
+}
+
+export interface UserProfileDto extends UserDto {
+    displayName?: string | null;
+    bio?: string | null;
+    profileImageUrl?: string | null;
+    stats: UserStatsDto;
+    leaderboardPosition: number;
+}
+
+export interface PageDto<T> {
+    content: T[];
+    totalElements: number;
+    totalPages: number;
+    number: number;
+    size: number;
+    first: boolean;
+    last: boolean;
+    empty: boolean;
+}
+
 export const fetchNearbyTrees = async (lat: number, lng: number, radiusMeters: number = 250, signal?: AbortSignal): Promise<TreeDto[]> => {
     try {
         const response = await api.get<ApiResponse<TreeDto[]>>('/trees/nearby', {
@@ -215,6 +261,28 @@ export const createTree = async (data: CreateTreeDto): Promise<TreeDto | null> =
     } catch (error) {
         console.error('Error creating tree:', error);
         return null;
+    }
+};
+
+export const fetchUserProfile = async (username: string): Promise<UserProfileDto | null> => {
+    try {
+        const response = await api.get<ApiResponse<UserProfileDto>>(`/users/${encodeURIComponent(username)}/profile`);
+        return response.data.data;
+    } catch (error) {
+        console.error('Error fetching user profile:', error);
+        return null;
+    }
+};
+
+export const fetchLeaderboard = async (page: number = 0, size: number = 5): Promise<LeaderboardEntryDto[]> => {
+    try {
+        const response = await api.get<ApiResponse<PageDto<LeaderboardEntryDto>>>('/users/leaderboard', {
+            params: { page, size },
+        });
+        return response.data.data.content;
+    } catch (error) {
+        console.error('Error fetching leaderboard:', error);
+        return [];
     }
 };
 

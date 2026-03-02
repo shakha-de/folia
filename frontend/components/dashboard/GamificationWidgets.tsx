@@ -1,15 +1,33 @@
 import React from 'react';
 import Link from 'next/link';
-import { UserGamification, MOCK_LEADERBOARD, LeaderboardEntry } from '@/lib/mock';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
-interface GamificationWidgetsProps {
-    gamification: UserGamification;
-    leaderboard: typeof MOCK_LEADERBOARD;
+interface GamificationBadge {
+    id: string;
+    name: string;
+    icon: string;
+    unlocked: boolean;
 }
 
-export default function GamificationWidgets({ gamification, leaderboard }: GamificationWidgetsProps) {
+interface GamificationLeaderboardEntry {
+    rank: number;
+    name: string;
+    xp: number;
+    isCurrentUser?: boolean;
+}
+
+interface GamificationWidgetsProps {
+    badges: GamificationBadge[];
+    leaderboard: GamificationLeaderboardEntry[];
+    locationLabel?: string;
+}
+
+export default function GamificationWidgets({
+    badges,
+    leaderboard,
+    locationLabel = 'Yunusabad District',
+}: GamificationWidgetsProps) {
     return (
         <div className="flex flex-col gap-8">
             {/* Achievements Widget */}
@@ -19,7 +37,7 @@ export default function GamificationWidgets({ gamification, leaderboard }: Gamif
                     <Link className="text-primary text-xs font-bold uppercase tracking-wider hover:underline" href="/learn-more">View All</Link>
                 </div>
                 <div className="grid grid-cols-3 gap-4">
-                    {gamification.badges.map((badge) => (
+                    {badges.map((badge) => (
                         <div key={badge.id} className={`flex flex-col items-center gap-2 group cursor-pointer ${!badge.unlocked ? 'opacity-50' : ''}`}>
                             <div className={`size-14 rounded-full ${badge.unlocked ? 'bg-slate-200 dark:bg-slate-700 border-2 border-primary group-hover:shadow-[0_0_15px_rgba(19,236,55,0.3)]' : 'bg-slate-100 dark:bg-slate-800 border border-border border-dashed'} flex items-center justify-center transition-all`}>
                                 <span className={`material-symbols-outlined text-2xl ${badge.unlocked ? 'text-primary' : 'text-slate-400 dark:text-slate-500'}`}>{badge.icon}</span>
@@ -33,10 +51,10 @@ export default function GamificationWidgets({ gamification, leaderboard }: Gamif
             <Card className="overflow-hidden p-0 bg-surface-light dark:bg-surface-dark border-border">
                 <div className="p-5 border-b border-border bg-slate-100 dark:bg-slate-800">
                     <h3 className="text-slate-900 dark:text-white text-lg font-bold">Local Guardians</h3>
-                    <p className="text-slate-600 dark:text-slate-300 text-xs mt-1">Top savers in <span className="text-slate-900 dark:text-white font-medium">Yunusabad District</span></p>
+                    <p className="text-slate-600 dark:text-slate-300 text-xs mt-1">Top savers in <span className="text-slate-900 dark:text-white font-medium">{locationLabel}</span></p>
                 </div>
                 <div className="flex flex-col">
-                    {leaderboard.map((entry: LeaderboardEntry) => (
+                    {leaderboard.map((entry) => (
                         <div key={entry.rank} className={`flex items-center gap-3 p-4 ${entry.isCurrentUser ? 'bg-primary/10 border-l-4 border-l-primary hover:bg-primary/15' : 'border-b border-border hover:bg-slate-100 dark:hover:bg-slate-800'} transition-colors`}>
                             <Badge variant={entry.rank === 1 ? 'default' : 'secondary'} className={`size-6 flex items-center justify-center font-bold rounded text-xs ${entry.rank === 1 ? 'bg-yellow-500/20 text-yellow-500' : entry.rank === 2 ? 'bg-gray-400/20 text-gray-400' : entry.rank === 3 ? 'bg-orange-400/20 text-orange-400' : 'text-[#9db9a1]'}`}>
                                 {entry.rank}

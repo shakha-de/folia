@@ -27,6 +27,15 @@ public class UserService {
             );
     }
 
+    public User getUserByUsername(String username) {
+        return userRepository.findByUsername(username)
+            .orElseThrow(() -> new UserNotFoundException(
+                    MessageKey.USER_NOT_FOUND,
+                    username
+                )
+            );
+    }
+
     public void deleteUserByUuid(UUID uuid) {
         User user = userRepository.findByUuid(uuid)
             .orElseThrow(() -> new UserNotFoundException(

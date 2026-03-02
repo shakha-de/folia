@@ -59,7 +59,15 @@ export default function Dashboard() {
 
             <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
 
-                <ProfileSection user={{ ...user, uuid: user.uuid }} gamification={gamification} />
+                <ProfileSection
+                    user={{ ...user, uuid: user.uuid }}
+                    rank={gamification.rank}
+                    nextRank={gamification.nextRank}
+                    progress={gamification.progress}
+                    location={gamification.location}
+                    co2Offset={gamification.co2Offset}
+                    treeYears={gamification.treeYears}
+                />
 
                 <StatsOverview stats={stats} />
 
@@ -69,7 +77,15 @@ export default function Dashboard() {
                     <TreeList trees={myTrees} />
 
                     {/* Right Column: Gamification & Community */}
-                    <GamificationWidgets gamification={gamification} leaderboard={MOCK_LEADERBOARD} />
+                    <GamificationWidgets
+                        badges={gamification.badges}
+                        leaderboard={MOCK_LEADERBOARD.map((entry) => ({
+                            rank: entry.rank,
+                            name: entry.name,
+                            xp: entry.xp,
+                            isCurrentUser: entry.isCurrentUser,
+                        }))}
+                    />
                 </div>
 
                 <FloatingActionButton />

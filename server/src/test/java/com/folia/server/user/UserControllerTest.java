@@ -3,6 +3,8 @@ package com.folia.server.user;
 import com.folia.server.common.messages.MessageKey;
 import com.folia.server.common.messages.MessageService;
 import com.folia.server.exceptions.ApiExceptionHandler;
+import com.folia.server.stats.UserStats;
+import com.folia.server.stats.UserStatsService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -43,11 +45,15 @@ class UserControllerTest {
     @Autowired
     MessageService messageService;
 
+    @Autowired
+    UserStatsService userStatsService;
+
     MockMvc mockMvc;
 
     @BeforeEach
     void setUp() {
         mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
+        Mockito.reset(userService, messageService, userStatsService);
     }
 
     @Test
@@ -130,6 +136,56 @@ class UserControllerTest {
         verify(messageService).get(eq(MessageKey.USER_DELETED), any(Locale.class), any(Object[].class));
     }
 
+    @Test
+    void byUsernameProfile_existing_returns200() throws Exception {
+        User user = User.builder()
+            .uuid(UUID.fromString("00000000-0000-0000-0000-000000000006"))
+            .username("diana")
+            .email("diana@example.com")
+            .passwordHash("x")
+            .role(UserRole.CITIZEN)
+            .isEnabled(true)
+            .build();
+
+        UserStats stats = UserStats.builder()
+            .user(user)
+            .xp(350)
+            .treesRegistered(4)
+            .wateringsLogged(9)
+            .currentWateringsStreak(2)
+            .build();
+
+        when(userService.getUserByUsername("diana")).thenReturn(user);
+        when(userStatsService.getMyStats(user)).thenReturn(stats);
+        when(userStatsService.getUserPositionInLeaderboard(user)).thenReturn(12L);
+        when(messageService.get(eq(MessageKey.USER_RETRIEVED), any(Locale.class), any(Object[].class))).thenReturn("retrieved");
+
+        mockMvc.perform(get("/api/users/{username}/profile", "diana"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.message").value("retrieved"))
+            .andExpect(jsonPath("$.data.username").value("diana"))
+            .andExpect(jsonPath("$.data.stats.xp").value(350))
+            .andExpect(jsonPath("$.data.leaderboardPosition").value(12));
+
+        verify(userService).getUserByUsername("diana");
+        verify(userStatsService).getMyStats(user);
+        verify(userStatsService).getUserPositionInLeaderboard(user);
+    }
+
+    @Test
+    void byUsernameProfile_missing_returns404ProblemDetail() throws Exception {
+        when(userService.getUserByUsername("ghost"))
+            .thenThrow(new com.folia.server.exceptions.UserNotFoundException(MessageKey.USER_NOT_FOUND, "ghost"));
+        when(messageService.get(eq(MessageKey.USER_NOT_FOUND), any(Locale.class), eq("ghost"))).thenReturn("User not found");
+
+        mockMvc.perform(get("/api/users/{username}/profile", "ghost"))
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.message").value("User not found"))
+            .andExpect(jsonPath("$.data").isEmpty());
+    }
+
     @SpringBootConfiguration
     @EnableAutoConfiguration(exclude = {
         DataSourceAutoConfiguration.class,
@@ -151,6 +207,12 @@ class UserControllerTest {
         @Primary
         MessageService messageService() {
             return Mockito.mock(MessageService.class);
+        }
+
+        @Bean
+        @Primary
+        UserStatsService userStatsService() {
+            return Mockito.mock(UserStatsService.class);
         }
     }
 }

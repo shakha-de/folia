@@ -51,9 +51,12 @@ export default function Header() {
                         <ThemeToggle />
                         {isAuthenticated ? (
                             <div className="flex items-center gap-4">
-                                <span className="text-sm font-bold text-slate-700 dark:text-slate-200">
+                                <Link
+                                    href={`/u/${user?.username}`}
+                                    className="text-sm font-bold text-slate-700 dark:text-slate-200 hover:text-primary dark:hover:text-primary transition-colors"
+                                >
                                     {user?.username}
-                                </span>
+                                </Link>
                                 <Button
                                     variant="ghost"
                                     onClick={logout}
@@ -115,7 +118,14 @@ export default function Header() {
                                 <>
                                     <div className="px-4 py-2">
                                         <p className="text-xs text-slate-500 dark:text-slate-400 uppercase font-bold mb-1">Signed in as</p>
-                                        <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{user?.username}</p>
+                                        <SheetClose asChild>
+                                            <Link
+                                                href={`/u/${user?.username}`}
+                                                className="text-sm font-bold text-slate-700 dark:text-slate-200 hover:text-primary"
+                                            >
+                                                {user?.username}
+                                            </Link>
+                                        </SheetClose>
                                     </div>
                                     <Button
                                         variant="destructive"
