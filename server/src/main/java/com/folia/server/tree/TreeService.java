@@ -2,6 +2,7 @@ package com.folia.server.tree;
 
 import com.folia.server.common.messages.MessageKey;
 import com.folia.server.exceptions.TreeNotFoundException;
+import com.folia.server.stats.UserStatsService;
 import com.folia.server.user.User;
 import lombok.RequiredArgsConstructor;
 import org.locationtech.jts.geom.Coordinate;
@@ -20,6 +21,7 @@ import java.util.stream.Collectors;
 public class TreeService {
 
     private final TreeRepository treeRepository;
+    private final UserStatsService statsService;
 
     private static final GeometryFactory GEOMETRY_FACTORY = new GeometryFactory(new PrecisionModel(), 4326);
 
@@ -38,6 +40,7 @@ public class TreeService {
                 .registeredBy(registerer)
                 .build();
 
+        statsService.onRegistered(registerer);
         tree.setNextWateringDue(calculateNextWateringDue(request.soilMoistureLevel(), LocalDateTime.now()));
         return treeRepository.save(tree);
     }
@@ -69,7 +72,7 @@ public class TreeService {
         treeRepository.delete(tree);
     }
 
-    public Tree waterTree(UUID publicId, WaterTreeRequest request) {
+    public Tree waterTree(UUID publicId, WaterTreeRequest request, User user) {
         Tree tree = getTreeByPublicId(publicId);
 
         LocalDateTime wateredAt = request.optionalWateredAt().orElse(LocalDateTime.now());
@@ -80,6 +83,8 @@ public class TreeService {
         request.optionalNotes().ifPresent(note -> tree.getMetadata().put("lastWaterNote", note));
         request.optionalWaterAmountLiters()
                 .ifPresent(amount -> tree.getMetadata().put("lastWaterAmountLiters", amount));
+
+        statsService.onWatered(user, tree);
 
         return treeRepository.save(tree);
     }

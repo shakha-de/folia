@@ -19,6 +19,10 @@ public enum MessageKey {
     USER_DELETED("user.deleted"),
     USER_RETRIEVED("user.retrieved"),
     USERS_RETRIEVED("users.retrieved"),
+    USER_STATS_RETRIEVED_SUCCESSFULLY("user.stats.retrieved.successfully"),
+    USER_ACTIVITIES_RETRIEVED_SUCCESSFULLY("user.activities.retrieved.successfully"),
+    LEADERBOARD_RETRIEVED_SUCCESSFULLY("leaderboard.retrieved.successfully"),
+    USER_POSITION_RETRIEVED_SUCCESSFULLY("user.position.retrieved.successfully"),
 
     // ================= USER: ERROR ============
     USER_NOT_FOUND("user.not.found"),
@@ -84,7 +88,8 @@ public enum MessageKey {
     TREE_STATISTICS_RETRIEVED_SUCCESSFULLY("tree.statistics.retrieved.successfully"),
     TREES_NEARBY_RETRIEVED_SUCCESSFULLY("trees.nearby.retrieved.successfully"),
     TREES_NEEDING_WATER_RETRIEVED_SUCCESSFULLY("trees.needing.water.retrieved.successfully"),
-    TREES_SEARCHED_SUCCESSFULLY("trees.searched.successfully");
+    TREES_SEARCHED_SUCCESSFULLY("trees.searched.successfully"),
+    ;
 
     private final String value;
 }

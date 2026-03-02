@@ -97,8 +97,9 @@ public class TreeController {
     public ResponseEntity<ApiResponse<TreeDto>> water(
             @PathVariable UUID publicId,
             @RequestBody @Valid WaterTreeRequest request,
+            @AuthenticationPrincipal User user,
             Locale locale) {
-        Tree tree = treeService.waterTree(publicId, request);
+        Tree tree = treeService.waterTree(publicId, request, user);
         return ResponseUtils.ok(TreeDto.from(tree), ms.get(MessageKey.TREE_WATERED_SUCCESSFULLY, locale));
     }
 

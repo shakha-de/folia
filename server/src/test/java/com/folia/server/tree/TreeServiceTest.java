@@ -33,6 +33,9 @@ class TreeServiceTest {
     @Mock
     TreeRepository treeRepository;
 
+    @Mock
+    com.folia.server.stats.UserStatsService userStatsService;
+
     @InjectMocks
     TreeService treeService;
 
@@ -81,6 +84,7 @@ class TreeServiceTest {
         assertThat(created.getLocation().getY()).isEqualTo(52.52);
         assertThat(created.getMetadata()).containsEntry("plantedBy", "alice");
         assertThat(created.getNextWateringDue()).isAfter(before.plusDays(2)).isBefore(before.plusDays(4));
+        verify(userStatsService).onRegistered(user);
     }
 
     @Test
@@ -153,12 +157,22 @@ class TreeServiceTest {
 
         WaterTreeRequest request = new WaterTreeRequest("note", 1.5, wateredAt);
 
-        Tree watered = treeService.waterTree(publicId, request);
+        User user = User.builder()
+            .uuid(UUID.randomUUID())
+            .username("bob")
+            .email("bob@example.com")
+            .passwordHash("x")
+            .role(UserRole.CITIZEN)
+            .isEnabled(true)
+            .build();
+
+        Tree watered = treeService.waterTree(publicId, request, user);
 
         assertThat(watered.getLastWateredAt()).isEqualTo(wateredAt);
         assertThat(watered.getNextWateringDue()).isEqualTo(wateredAt.plusDays(6));
         assertThat(watered.getMetadata()).containsEntry("lastWaterNote", "note");
         assertThat(watered.getMetadata()).containsEntry("lastWaterAmountLiters", 1.5);
+        verify(userStatsService).onWatered(user, existing);
     }
 
     @Test

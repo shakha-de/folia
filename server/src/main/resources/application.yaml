@@ -42,9 +42,6 @@ spring:
           non_textual_creation: true
     show-sql: true
 
-  flyway:
-    enabled: false
-
 application:
   security:
     jwt:

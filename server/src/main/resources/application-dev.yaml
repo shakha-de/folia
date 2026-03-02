@@ -32,11 +32,6 @@ spring:
           non_textual_creation: true
     show-sql: true
 
-  flyway:
-    enabled: false
-    locations: classpath:db/migration,classpath:db/dev-migration
-    clean-disabled: false
-
   servlet:
     multipart:
       max-request-size: 10MB
