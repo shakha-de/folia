@@ -55,6 +55,7 @@ public class TreeController {
         );
     }
 
+    /// Register a new tree. The authenticated [User] becomes the [Tree#registeredBy] and first caregiver of the tree.
     @PostMapping
     public ResponseEntity<ApiResponse<TreeDto>> create(
         @RequestBody @Valid CreateTreeRequest request,
@@ -134,5 +135,19 @@ public class TreeController {
             Locale locale) {
         TreeStats stats = treeService.getTreeStats(lat, lng, radiusMeters);
         return ResponseUtils.ok(stats, ms.get(MessageKey.TREE_STATISTICS_RETRIEVED_SUCCESSFULLY, locale));
+    }
+
+    /// Adopt a tree that is currently registered. The adopter becomes the new caregiver of the tree, and the previous registeredBy is replaced. This is useful for cases where someone registers a tree but then wants to transfer care to someone else, or if a tree was registered by mistake and needs to be adopted by the correct person.
+    @PostMapping("/{id}/adopt")
+    public ResponseEntity<ApiResponse<TreeDto>> adoptTree(
+        @AuthenticationPrincipal User user,
+        @PathVariable(name = "id") UUID treePublicId,
+        Locale locale
+    ) {
+        Tree tree = treeService.adoptTree(treePublicId, user);
+        return ResponseUtils.ok(
+            TreeDto.from(tree),
+            ms.get(MessageKey.TREE_ADOPTED_SUCCESSFULLY, locale)
+        );
     }
 }

@@ -14,7 +14,6 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -29,9 +28,6 @@ class UserStatsServiceTest {
 
     @Mock
     private UserStatsRepository statsRepo;
-
-    @Mock
-    private com.folia.server.activity.TreeActivityRepository activityRepo;
 
     @InjectMocks
     private UserStatsService statsService;
@@ -59,7 +55,7 @@ class UserStatsServiceTest {
         statsService.onRegistered(user);
 
         verify(statsRepo).save(argThat(stats ->
-            stats.getXp() == 1 &&
+            stats.getXp() == 50 &&
             stats.getTreesRegistered() == 1 &&
             stats.getUnlockedBadgeIds().contains("planter")
         ));

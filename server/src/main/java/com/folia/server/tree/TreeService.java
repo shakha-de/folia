@@ -136,4 +136,10 @@ public class TreeService {
     public List<Tree> getMyTrees(User user) {
         return treeRepository.findByRegisteredBy(user);
     }
+
+    public Tree adoptTree(UUID treePublicId, User user) {
+        Tree tree = getTreeByPublicId(treePublicId);
+        tree.setAdoptedBy(user);
+        return treeRepository.save(tree);
+    }
 }

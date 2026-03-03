@@ -89,6 +89,9 @@ public enum MessageKey {
     TREES_NEARBY_RETRIEVED_SUCCESSFULLY("trees.nearby.retrieved.successfully"),
     TREES_NEEDING_WATER_RETRIEVED_SUCCESSFULLY("trees.needing.water.retrieved.successfully"),
     TREES_SEARCHED_SUCCESSFULLY("trees.searched.successfully"),
+    TREE_ADOPTED_SUCCESSFULLY("tree.adopted.successfully"),
+
+
     ;
 
     private final String value;

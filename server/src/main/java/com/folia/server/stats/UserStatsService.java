@@ -22,7 +22,7 @@ public class UserStatsService {
 
     public void onRegistered(User user) {
         UserStats stats = getOrCreate(user);
-        stats.setXp(stats.getXp() + 1);
+        stats.setXp(stats.getXp() + 50);
         stats.setTreesRegistered(stats.getTreesRegistered() + 1);
         checkAndAwardBadges(stats);
         statsRepo.save(stats);

@@ -3,14 +3,24 @@ package com.folia.server.tree;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.folia.server.user.User;
+import com.folia.server.user.UserRole;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.Point;
+import org.locationtech.jts.geom.PrecisionModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -24,6 +34,7 @@ import com.folia.server.exceptions.ApiExceptionHandler;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
@@ -33,8 +44,13 @@ import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 
+@Slf4j
 @SpringBootTest(classes = TreeControllerTest.TestApp.class, webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 class TreeControllerTest {
+
+    private static final GeometryFactory GEOMETRY_FACTORY =
+        new GeometryFactory(new PrecisionModel(), 4326);
+
 
     @Autowired
     WebApplicationContext webApplicationContext;
@@ -112,6 +128,102 @@ class TreeControllerTest {
                 .andExpect(jsonPath("$.message").value("Validation failed"));
     }
 
+    @Test
+    void adoptTree_validRequest_returns200AndJson() throws Exception {
+        UUID userUuid = UUID.randomUUID();
+        UUID treePublicId = UUID.fromString("00000000-0000-0000-0000-000000000002");
+
+        User user = User.builder()
+            .uuid(userUuid)
+            .username("alice")
+            .email("alice@example.com")
+            .passwordHash("x")
+            .role(UserRole.CITIZEN)
+            .isEnabled(true)
+            .build();
+
+        Tree tree = Tree.builder()
+                .id(1L)
+                .publicId(treePublicId)
+                .species("Quercus robur")
+                .location(point(13.0050,52.8200))
+                .commonName("shaptoli")
+                .soilMoistureLevel(SoilMoistureLevel.DRY)
+                .healthStatus(TreeHealthStatus.HEALTHY)
+                .registeredBy(user)
+                .build();
+        log.info("Test tree: {}", tree);
+
+
+        when(treeService.adoptTree(eq(treePublicId), nullable(User.class)))
+            .thenReturn(tree);
+        when(messageService.get(eq(MessageKey.TREE_ADOPTED_SUCCESSFULLY), any(Locale.class), any(Object[].class)))
+                .thenReturn("Tree adopted successfully");
+
+        mockMvc.perform(post("/api/trees/00000000-0000-0000-0000-000000000002/adopt")
+                        )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("Tree adopted successfully"))
+                .andExpect(jsonPath("$.data.publicId").value("00000000-0000-0000-0000-000000000002"))
+                .andExpect(jsonPath("$.data.species").value("Quercus robur"));
+
+        verify(treeService).adoptTree(eq(treePublicId), nullable(User.class));
+    }
+
+    @Test
+    void registerTree_validRequest_returns201AndJson() throws Exception {
+        UUID userUuid = UUID.randomUUID();
+        UUID treePublicId = UUID.fromString("00000000-0000-0000-0000-000000000002");
+
+        CreateTreeRequest req = new
+            CreateTreeRequest(
+            "Quercus robur",
+            "shaptoli",
+            13.4050,52.5200,
+            SoilMoistureLevel.DRY,
+            TreeHealthStatus.HEALTHY,
+            null
+        );
+
+        User user = User.builder()
+            .uuid(userUuid)
+            .username("alice")
+            .email("alice@example.com")
+            .passwordHash("x")
+            .role(UserRole.CITIZEN)
+            .isEnabled(true)
+            .build();
+
+        Tree tree = Tree.builder()
+            .id(1L)
+            .publicId(treePublicId)
+            .species("Quercus robur")
+            .location(point(15.4050,52.2200))
+            .commonName("shaptoli")
+            .soilMoistureLevel(SoilMoistureLevel.DRY)
+            .healthStatus(TreeHealthStatus.HEALTHY)
+            .registeredBy(user)
+            .build();
+        when(treeService.createTree(any(CreateTreeRequest.class), nullable(User.class))).thenReturn(tree);
+        when(messageService.get(eq(MessageKey.TREE_CREATED_SUCCESSFULLY), any(Locale.class), any(Object[].class)))
+                .thenReturn("Tree created successfully");
+        when(messageService.get(eq(MessageKey.TREE_CREATED_SUCCESSFULLY), isNull(), any(Object[].class)))
+            .thenReturn("Tree created successfully");
+
+        mockMvc.perform(post("/api/trees")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(new ObjectMapper().writeValueAsString(req)))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.message").value("Tree created successfully"))
+            .andExpect(jsonPath("$.data.publicId").value("00000000-0000-0000-0000-000000000002"))
+            .andExpect(jsonPath("$.data.species").value("Quercus robur"));
+
+        verify(treeService).createTree(any(CreateTreeRequest.class), nullable(User.class));
+
+    }
+
     @SpringBootConfiguration
     @EnableAutoConfiguration(exclude = {
             DataSourceAutoConfiguration.class,
@@ -134,5 +246,8 @@ class TreeControllerTest {
         MessageService messageService() {
             return Mockito.mock(MessageService.class);
         }
+    }
+    private static Point point(double lng, double lat) {
+        return GEOMETRY_FACTORY.createPoint(new Coordinate(lng, lat));
     }
 }
