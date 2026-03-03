@@ -19,7 +19,7 @@ class UserStatsDtoTest {
         assertThat(dto.rank()).isEqualTo("Seed Keeper");
         assertThat(dto.nextRank()).isEqualTo("Seedling Saver");
         assertThat(dto.xpToNextRank()).isEqualTo(200);
-        assertThat(dto.progressPercent()).isEqualTo(0);
+        assertThat(dto.progressPercent()).isZero();
     }
 
     @Test
@@ -50,7 +50,7 @@ class UserStatsDtoTest {
 
         assertThat(dto.rank()).isEqualTo("Ancient Grove Master");
         assertThat(dto.nextRank()).isEqualTo("Ancient Grove Master");
-        assertThat(dto.xpToNextRank()).isEqualTo(0);
+        assertThat(dto.xpToNextRank()).isZero();
         assertThat(dto.progressPercent()).isEqualTo(100);
     }
 

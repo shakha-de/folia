@@ -25,8 +25,8 @@ function MapLoader() {
 }
 
 interface MapErrorBoundaryState { hasError: boolean; }
-class MapErrorBoundary extends React.Component<{ children: React.ReactNode }, MapErrorBoundaryState> {
-    constructor(props: { children: React.ReactNode }) {
+class MapErrorBoundary extends React.Component<Readonly<{ children: React.ReactNode }>, MapErrorBoundaryState> {
+    constructor(props: Readonly<{ children: React.ReactNode }>) {
         super(props);
         this.state = { hasError: false };
     }
@@ -130,7 +130,7 @@ function matchesTree(tree: TreeDto, filter: HealthFilter, search: string): boole
 const BrowseSidebar = React.memo(function BrowseSidebar({
     stats, filtered, filter, setFilter, search, setSearch,
     locating, locError, location, onRegister, onClose,
-}: {
+}: Readonly<{
     stats: TreeStats | null;
     filtered: TreeDto[];
     filter: HealthFilter;
@@ -142,7 +142,7 @@ const BrowseSidebar = React.memo(function BrowseSidebar({
     location: GeoLocation | null;
     onRegister: () => void;
     onClose: () => void;
-}): React.ReactElement {
+}>): React.ReactElement {
     return (
         <>
             <div className="p-5 pb-2 border-b border-gray-100 dark:border-[#1e2f21]">
@@ -190,7 +190,7 @@ const BrowseSidebar = React.memo(function BrowseSidebar({
             <div className="p-5 border-t border-gray-100 dark:border-[#1e2f21] bg-white dark:bg-[#111812]">
                 <Button onClick={onRegister} className="w-full bg-primary hover:bg-[#0fd630] text-black font-semibold py-3 rounded-lg gap-2">
                     <span className="material-symbols-outlined text-[20px]">add_circle</span>
-                    Register New Tree
+                    <span>Register New Tree</span>
                 </Button>
             </div>
         </>
@@ -202,7 +202,7 @@ const RegisterSidebar = React.memo(function RegisterSidebar({
     commonName, setCommonName, soilMoisture, setSoilMoisture, healthStatus, setHealthStatus,
     submitting, errorMsg, successMsg, mapPointPicked, regLat, regLng,
     onSubmit, onBack, onClose,
-}: {
+}: Readonly<{
     species: string; setSpecies: (s: string) => void;
     speciesFocused: boolean; setSpeciesFocused: (b: boolean) => void;
     speciesSuggestions: { value: string; label: string }[];
@@ -213,15 +213,13 @@ const RegisterSidebar = React.memo(function RegisterSidebar({
     mapPointPicked: boolean; regLat: number | null; regLng: number | null;
     onSubmit: (e: React.FormEvent) => void;
     onBack: () => void; onClose: () => void;
-}): React.ReactElement {
+}>): React.ReactElement {
     return (
         <>
             <div className="p-5 pb-2 border-b border-gray-100 dark:border-[#1e2f21]">
                 <div className="flex items-center justify-between mb-3">
                     <button onClick={onBack} className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 hover:text-primary dark:hover:text-primary transition-colors">
-                        <span className="material-symbols-outlined text-[16px]">arrow_back</span>
-                        Back
-                    </button>
+                        <span className="material-symbols-outlined text-[16px]">arrow_back</span>Back</button>
                     <h2 className="text-sm font-bold text-slate-900 dark:text-white tracking-wide">Register Tree</h2>
                     <button onClick={onClose} aria-label="Minimize sidebar" className="md:hidden flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 dark:bg-[#1c271d] border border-gray-200 dark:border-[#2a3f2d] text-slate-500 dark:text-slate-300">
                         <span className="material-symbols-outlined text-[18px]">close</span>
@@ -317,10 +315,10 @@ const RegisterSidebar = React.memo(function RegisterSidebar({
 
 const RegisterMapOverlays = React.memo(function RegisterMapOverlays({
     showMapTip, mapTipFading, mapPointPicked, regLat, regLng,
-}: {
+}: Readonly<{
     showMapTip: boolean; mapTipFading: boolean;
     mapPointPicked: boolean; regLat: number | null; regLng: number | null;
-}): React.ReactElement {
+}>): React.ReactElement {
     const coordText = mapPointPicked
         ? `${regLat?.toFixed(5)}, ${regLng?.toFixed(5)} — Tap to move marker`
         : "Tap map to set location";
@@ -341,13 +339,13 @@ const RegisterMapOverlays = React.memo(function RegisterMapOverlays({
 
 const FloatingNav = React.memo(function FloatingNav({
     username, navOpen, setNavOpen, isAuthenticated, logout,
-}: {
+}: Readonly<{
     username: string | undefined;
     navOpen: boolean;
     setNavOpen: React.Dispatch<React.SetStateAction<boolean>>;
     isAuthenticated: boolean;
     logout: () => void;
-}): React.ReactElement {
+}>): React.ReactElement {
     const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
 
     const handleConfirmLogout = () => {
@@ -401,7 +399,7 @@ const FloatingNav = React.memo(function FloatingNav({
                         {isAuthenticated && (
                             <button onClick={() => setIsLogoutConfirmOpen(true)} className="w-full flex items-center gap-2 px-4 py-3 text-sm font-semibold text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors">
                                 <span className="material-symbols-outlined text-[16px]">logout</span>
-                                Log out
+                                <span>Log out</span>
                             </button>
                         )}
                     </div>
@@ -494,7 +492,7 @@ function TreesPageInner(): React.ReactElement {
         searchParams?.get("register") === "true" ? "register" : "browse"
     );
     const [sidebarOpen, setSidebarOpen] = useState(() => {
-        if (typeof window === "undefined") return true;
+        if (globalThis.window === undefined) return true;
         return window.innerWidth >= 1024;
     });
     const [navOpen, setNavOpen] = useState(false);
@@ -519,9 +517,9 @@ function TreesPageInner(): React.ReactElement {
         let debounce: number;
         const onResize = () => {
             clearTimeout(debounce);
-            debounce = window.setTimeout(() => {
+            debounce = globalThis.setTimeout(() => {
                 if (window.innerWidth >= 1024) setSidebarOpen(true);
-            }, 150);
+            }, 150) as unknown as number;
         };
 
         window.addEventListener("resize", onResize);
@@ -566,8 +564,13 @@ function TreesPageInner(): React.ReactElement {
         getUserLocation().then((loc) => {
             setLocating(false);
             const center = loc ?? DEFAULT_CENTER;
-            if (!loc) setLocError(true);
-            else { setLocation(loc); setRegLat(loc.lat); setRegLng(loc.lng); }
+            if (loc) {
+                setLocation(loc);
+                setRegLat(loc.lat);
+                setRegLng(loc.lng);
+            } else {
+                setLocError(true);
+            }
             lastViewRef.current = { lat: center.lat, lng: center.lng, radius: 20000 };
             return Promise.all([
                 fetchNearbyTrees(center.lat, center.lng, 20000),
@@ -597,8 +600,8 @@ function TreesPageInner(): React.ReactElement {
             setMapTipFading(false);
         });
         mapTipTimersRef.current = {
-            fade: window.setTimeout(() => setMapTipFading(true), 2500),
-            hide: window.setTimeout(() => setShowMapTip(false), 3500),
+            fade: globalThis.setTimeout(() => setMapTipFading(true), 2500) as unknown as number,
+            hide: globalThis.setTimeout(() => setShowMapTip(false), 3500) as unknown as number,
         };
     }, [startModeTransition]);
 
@@ -682,7 +685,7 @@ function TreesPageInner(): React.ReactElement {
 
         // Debounce: wait 200 ms after the last pan/zoom event before doing any work
         if (mapViewDebounceRef.current !== null) clearTimeout(mapViewDebounceRef.current);
-        mapViewDebounceRef.current = window.setTimeout(() => {
+        mapViewDebounceRef.current = globalThis.setTimeout(() => {
             mapViewDebounceRef.current = null;
             const last = lastViewRef.current;
             const shouldSkip = !!last && !hasMovedSignificantly(last, center, radius);
@@ -708,7 +711,7 @@ function TreesPageInner(): React.ReactElement {
             }).finally(() => {
                 if (!controller.signal.aborted) setFetching(false);
             });
-        }, 200);
+        }, 200) as unknown as number;
     }, [userUuid]);
 
     const filtered = useMemo(

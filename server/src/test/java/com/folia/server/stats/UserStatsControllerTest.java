@@ -3,8 +3,6 @@ package com.folia.server.stats;
 import com.folia.server.activity.ActivityDto;
 import com.folia.server.common.messages.MessageKey;
 import com.folia.server.common.messages.MessageService;
-import com.folia.server.user.User;
-import com.folia.server.user.UserRole;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

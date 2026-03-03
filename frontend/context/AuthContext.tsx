@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, ReactNode } from "react";
 import api, { ApiResponse, UserDto, setAccessToken } from "@/lib/api";
 
 interface User {
@@ -54,7 +54,7 @@ const MOCK_USER: User = {
     enabled: true,
 };
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
 
@@ -77,7 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setLoading(false);
     }, []);
 
-    const login = async (credentials: LoginCredentials) => {
+    const login = useCallback(async (credentials: LoginCredentials) => {
         if (MOCK_AUTH_ENABLED) {
             // Development auth path (no backend call)
 
@@ -107,22 +107,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         // Real authentication
-        try {
-            const response = await api.post<ApiResponse<AuthResponse>>("/auth/login", credentials);
-            const { token, refreshToken, user: userData } = response.data.data;
+        const response = await api.post<ApiResponse<AuthResponse>>("/auth/login", credentials);
+        const { token, refreshToken, user: userData } = response.data.data;
 
-            setAccessToken(token);
-            localStorage.setItem("refreshToken", refreshToken);
-            localStorage.setItem("user", JSON.stringify(userData));
+        setAccessToken(token);
+        localStorage.setItem("refreshToken", refreshToken);
+        localStorage.setItem("user", JSON.stringify(userData));
 
-            setUser(userData);
-            return response.data.message || "Login successful";
-        } catch (error) {
-            throw error;
-        }
-    };
+        setUser(userData);
+        return response.data.message || "Login successful";
+    }, []);
 
-    const register = async (data: RegisterData) => {
+    const register = useCallback(async (data: RegisterData) => {
         if (MOCK_AUTH_ENABLED) {
             // Development auth registration path (no backend call)
 
@@ -145,41 +141,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
 
         // Real registration
-        try {
-            const response = await api.post<ApiResponse<AuthResponse>>("/auth/register", data);
+        const response = await api.post<ApiResponse<AuthResponse>>("/auth/register", data);
 
-            if (response.data.data?.token) {
-                const { token, refreshToken, user: userData } = response.data.data;
-                setAccessToken(token);
-                localStorage.setItem("refreshToken", refreshToken);
-                localStorage.setItem("user", JSON.stringify(userData));
-                setUser(userData);
-            }
-
-            return response.data.message || "Registration successful";
-        } catch (error) {
-            throw error;
+        if (response.data.data?.token) {
+            const { token, refreshToken, user: userData } = response.data.data;
+            setAccessToken(token);
+            localStorage.setItem("refreshToken", refreshToken);
+            localStorage.setItem("user", JSON.stringify(userData));
+            setUser(userData);
         }
-    };
 
-    const logout = () => {
+        return response.data.message || "Registration successful";
+    }, []);
+
+    const logout = useCallback(() => {
         setAccessToken(null);
         localStorage.removeItem("refreshToken");
         localStorage.removeItem("user");
         setUser(null);
-    };
+    }, []);
+
+    const contextValue = useMemo(
+        () => ({ user, loading, login, register, logout, isAuthenticated: !!user }),
+        [user, loading, login, register, logout],
+    );
 
     return (
-        <AuthContext.Provider
-            value={{
-                user,
-                loading,
-                login,
-                register,
-                logout,
-                isAuthenticated: !!user,
-            }}
-        >
+        <AuthContext.Provider value={contextValue}>
             {children}
         </AuthContext.Provider>
     );

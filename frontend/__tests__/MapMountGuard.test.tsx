@@ -22,15 +22,20 @@ import { render, screen, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // ─── Leaflet mock ────────────────────────────────────────────────────────────
+// Defined at module scope so it is hoisted and available inside the vi.mock factory.
+type IconDefaultMock = (() => void) & {
+    mergeOptions: ReturnType<typeof vi.fn>
+}
+function IconDefault() { /* mock constructor – intentionally empty */ }
+
 vi.mock('leaflet', () => {
     const divIcon = vi.fn(() => ({ className: '', html: '', iconSize: [32, 46] }))
     const mergeOptions = vi.fn()
-    const IconDefault = function () {}
     IconDefault.prototype = {}
-    IconDefault.mergeOptions = mergeOptions
+    ;(IconDefault as IconDefaultMock).mergeOptions = mergeOptions
     return {
         default: {
-            Icon: { Default: IconDefault },
+            Icon: { Default: IconDefault as IconDefaultMock },
             divIcon,
             mergeOptions,
         },
@@ -130,7 +135,7 @@ describe('PickLocationMap', () => {
         let rerender!: (ui: React.ReactElement) => void
         await act(async () => {
             ;({ rerender } = render(
-                <PickLocationMap lat={51.0} lng={10.0} onLocationChange={onLocationChange} />
+                <PickLocationMap lat={51} lng={10} onLocationChange={onLocationChange} />
             ))
         })
         expect(screen.getByTestId('marker')).toHaveAttribute('data-lat', '51')
@@ -147,9 +152,9 @@ describe('PickLocationMap', () => {
             render(<PickLocationMap {...DEFAULT_PICK_PROPS} onLocationChange={onLocationChange} />)
         })
         expect(capturedClickHandler).not.toBeNull()
-        act(() => { capturedClickHandler!({ latlng: { lat: 53.0, lng: 14.0 } }) })
+        act(() => { capturedClickHandler!({ latlng: { lat: 53, lng: 14 } }) })
         expect(onLocationChange).toHaveBeenCalledOnce()
-        expect(onLocationChange).toHaveBeenCalledWith(53.0, 14.0)
+        expect(onLocationChange).toHaveBeenCalledWith(53, 14)
     })
 
     it('fires onLocationChange for every map click', async () => {

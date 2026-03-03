@@ -12,7 +12,7 @@ const navItems = [
     { label: "Learn", href: "/learn-more", active: false },
 ];
 
-export default function DashboardTopBar({ displayName }: DashboardTopBarProps) {
+export default function DashboardTopBar({ displayName }: Readonly<DashboardTopBarProps>) {
     return (
         <header className="sticky top-0 z-50 w-full border-b border-border bg-background-light/90 dark:bg-background-dark/90 backdrop-blur-md px-4 sm:px-10 py-3">
             <div className="flex items-center justify-between mx-auto max-w-7xl">

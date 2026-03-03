@@ -3,12 +3,20 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { AuthProvider, useAuth } from '../context/AuthContext'
 import api from '../lib/api'
 
+// Test-fixture credential – not a real password
+const TEST_FIXTURE_PASSWORD = 'test-password-fixture'
+
 // Mock api
-vi.mock('../lib/api', () => ({
-  default: {
-    post: vi.fn(),
-  },
-}))
+vi.mock('../lib/api', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../lib/api')>()
+  return {
+    ...actual,
+    default: {
+      ...actual.default,
+      post: vi.fn(),
+    },
+  }
+})
 
 // Test component to access useAuth
 const TestComponent = () => {
@@ -17,7 +25,7 @@ const TestComponent = () => {
     <div>
       <div data-testid="user">{user?.username || 'no user'}</div>
       <div data-testid="auth">{isAuthenticated.toString()}</div>
-      <button onClick={() => login({ username: 'test', password: 'password' })}>Login</button>
+      <button onClick={() => login({ username: 'test', password: TEST_FIXTURE_PASSWORD })}>Login</button>
       <button onClick={logout}>Logout</button>
     </div>
   )

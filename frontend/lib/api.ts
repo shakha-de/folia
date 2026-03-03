@@ -8,11 +8,11 @@ const API_URL = normalizedApiUrl.endsWith('/api') ? normalizedApiUrl : `${normal
 // Avoids a localStorage read on every outgoing request; kept in sync by
 // setAccessToken(), which is the single write point for the access token.
 let _accessToken: string | null =
-    typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+    globalThis.window ? localStorage.getItem('accessToken') : null;
 
 export function setAccessToken(token: string | null): void {
     _accessToken = token;
-    if (typeof window === 'undefined') return;
+    if (!globalThis.window) return;
     if (token === null) {
         localStorage.removeItem('accessToken');
     } else {
@@ -48,11 +48,11 @@ function flushRefreshQueue(token: string) {
 }
 
 function clearAuthAndRedirect() {
-    if (typeof window === 'undefined') return;
+    if (!globalThis.window) return;
     setAccessToken(null);
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
-    window.location.replace('/login');
+    globalThis.window.location.replace('/login');
 }
 
 api.interceptors.response.use(
@@ -66,17 +66,17 @@ api.interceptors.response.use(
             original._retry ||
             original.url?.includes('/auth/')
         ) {
-            return Promise.reject(error);
+            throw error;
         }
 
         original._retry = true;
 
         const storedRefreshToken =
-            typeof window !== 'undefined' ? localStorage.getItem('refreshToken') : null;
+            globalThis.window ? localStorage.getItem('refreshToken') : null;
 
         if (!storedRefreshToken) {
             clearAuthAndRedirect();
-            return Promise.reject(error);
+            throw error;
         }
 
         if (isRefreshing) {
@@ -110,7 +110,7 @@ api.interceptors.response.use(
             isRefreshing = false;
             refreshQueue = [];
             clearAuthAndRedirect();
-            return Promise.reject(error);
+            throw error;
         }
     },
 );
