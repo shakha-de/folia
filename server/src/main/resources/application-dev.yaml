@@ -10,10 +10,9 @@ spring:
   # Database Configuration
   # ===========================
   datasource:
-    #url: "jdbc:postgresql://${HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:folia}"
-    url: "jdbc:postgresql://${NEON_DATABASE}"
-    username: "${POSTGRES_USER:folia}"
-    password: "${POSTGRES_PASSWORD:folia}"
+    url: "${SPRING_DATASOURCE_URL}"
+    username: "${SPRING_DATASOURCE_USERNAME}"
+    password: "${SPRING_DATASOURCE_PASSWORD}"
 
     # Connection Pool
     hikari:
@@ -44,11 +43,13 @@ spring:
       force-request: true
       force-response: true
 
-jwt:
-  secret: "${JWT_SECRET:dev-secret-change-me-please-change-me-please}"
-  expiration: ${JWT_EXPIRATION:3600000}
-
 application:
+  security:
+    jwt:
+      secret-key: "${JWT_SECRET:dev-secret-change-me-please-change-me-please}"
+      expiration: ${JWT_EXPIRATION:3600000}
+      refresh-token:
+        expiration: ${JWT_REFRESH_EXPIRATION:604800000}
   cors:
     allowed-origins: "${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://127.0.0.1:3000,http://192.168.178.203:3000}"
 

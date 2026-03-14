@@ -6,12 +6,12 @@ spring:
     encoding: UTF-8
 
   # ===========================
-  # Database Configuration (Neon)
+  # Database Configuration
   # ===========================
   datasource:
-    url: "${SPRING_DATASOURCE_URL:jdbc:postgresql://${NEON_DATABASE}}"
-    username: "${SPRING_DATASOURCE_USERNAME:${POSTGRES_USER}}"
-    password: "${SPRING_DATASOURCE_PASSWORD:${POSTGRES_PASSWORD}}"
+    url: "${SPRING_DATASOURCE_URL}"
+    username: "${SPRING_DATASOURCE_USERNAME}"
+    password: "${SPRING_DATASOURCE_PASSWORD}"
 
     hikari:
       maximum-pool-size: 5
