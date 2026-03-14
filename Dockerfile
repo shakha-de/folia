@@ -9,6 +9,8 @@ RUN chmod +x mvnw && ./mvnw clean package -DskipTests
 FROM eclipse-temurin:25-jre
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
+RUN chown -R ubuntu:ubuntu /app
+USER ubuntu
 
 ENV PORT=8080
 EXPOSE 8080
