@@ -25,11 +25,10 @@ spring:
   jpa:
     defer-datasource-initialization: true
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: update
     properties:
       hibernate:
         format_sql: false
-        dialect: org.hibernate.dialect.PostgreSQLDialect
       jdbc:
         lob:
           non_textual_creation: true
@@ -61,5 +60,8 @@ application:
 logging:
   level:
     org.springframework: WARN
+    org.hibernate.SQL: DEBUG
+    org.hibernate.tool.hbm2ddl: INFO
+    org.hibernate.orm.jdbc.bind: TRACE
     com.folia: INFO
 

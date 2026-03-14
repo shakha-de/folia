@@ -28,7 +28,7 @@ public class SecurityConfig {
     private String allowedOrigins;
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         log.debug("Initializing SecurityFilterChain");
         http
                 .csrf(AbstractHttpConfigurer::disable)
